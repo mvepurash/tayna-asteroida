@@ -164,12 +164,17 @@ const Renderer = (() => {
 
   function draw(dt) {
     ctx.clearRect(0, 0, W, H);
-    // Фон кратера
+    // Тёмный фон для всего экрана
+    ctx.fillStyle = '#0a0a12';
+    ctx.fillRect(0, 0, W, H);
+
+    // Фон кратера только в игровой зоне
+    const TOP_HUD = typeof HUD !== 'undefined' ? HUD.TOP_H : 110;
+    const BOT_HUD = typeof HUD !== 'undefined' ? HUD.BOT_Y : 706;
+    const gameZoneH = BOT_HUD - TOP_HUD;
+
     if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
-      ctx.drawImage(bgImg, 0, 0, W, H);
-    } else {
-      ctx.fillStyle = '#0d0d14';
-      ctx.fillRect(0, 0, W, H);
+      ctx.drawImage(bgImg, 0, TOP_HUD, W, gameZoneH);
     }
 
     _drawConnections();
