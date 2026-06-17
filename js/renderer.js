@@ -33,6 +33,7 @@ const Renderer = (() => {
 
   // Статичный спрайт шаттла
   let shuttleImg = null;
+  let bgImg      = null;  // фон кратера
 
   // Состояние текущей анимации
   const anim = {
@@ -57,6 +58,9 @@ const Renderer = (() => {
     // Загружаем статичный шаттл
     shuttleImg = new Image();
     shuttleImg.src = 'assets/sprites/shuttle.png';
+    // Фон кратера
+    bgImg = new Image();
+    bgImg.src = 'assets/bg_crater.png';
   }
 
   // ---------- Обновление кадра анимации ----------
@@ -160,8 +164,13 @@ const Renderer = (() => {
 
   function draw(dt) {
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#0d0d14';
-    ctx.fillRect(0, 0, W, H);
+    // Фон кратера
+    if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
+      ctx.drawImage(bgImg, 0, 0, W, H);
+    } else {
+      ctx.fillStyle = '#0d0d14';
+      ctx.fillRect(0, 0, W, H);
+    }
 
     _drawConnections();
     _drawPlatforms();
@@ -179,8 +188,8 @@ const Renderer = (() => {
     ctx.save();
     ctx.setLineDash([6, 5]);
     ctx.strokeStyle = '#2af4ff';
-    ctx.lineWidth   = 1.5;
-    ctx.globalAlpha = 0.45;
+    ctx.lineWidth   = 2;
+    ctx.globalAlpha = 0.7;
 
     const drawn = new Set();
 

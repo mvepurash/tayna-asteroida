@@ -177,6 +177,7 @@ const Game = (() => {
     get speedMultiplier() { return speedMultiplier; },
     get sessionTime()     { return sessionTime;     },
     get invincTimer()     { return invincTimer;     },
+    get waitingDeath()    { return waitingDeath;    },
     pause,
     resume,
   };

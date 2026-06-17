@@ -11,8 +11,8 @@ const HUD = (() => {
   const H = CONFIG.CANVAS_H;   // 854
 
   // Верхняя панель
-  const TOP_H    = 88;
-  const TOP_PAD  = 12;
+  const TOP_H    = 110;
+  const TOP_PAD  = 10;
 
   // Нижняя панель
   const BOT_H    = 148;
@@ -124,34 +124,33 @@ const HUD = (() => {
     const total   = Crystals.getSessionTotal();
 
     const cx = W / 2;
-    const cy = TOP_H / 2;
-
-    // Иконка кристалла (шестиугольник-заглушка)
-    ctx.save();
-    ctx.translate(cx - 50, cy);
-    _drawCrystalIcon(ctx, 18);
-    ctx.restore();
 
     // Метка
-    ctx.fillStyle    = 'rgba(150,220,255,0.7)';
-    ctx.font         = '11px sans-serif';
+    ctx.fillStyle    = 'rgba(150,220,255,0.8)';
+    ctx.font         = 'bold 11px sans-serif';
     ctx.textAlign    = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('КРИСТАЛЛЫ', cx, cy - 12);
+    ctx.textBaseline = 'top';
+    ctx.fillText('КРИСТАЛЛЫ', cx, 8);
 
-    // Число (доставлено)
+    // Иконка + число в одну строку
+    ctx.save();
+    ctx.translate(cx - 24, 38);
+    _drawCrystalIcon(ctx, 14);
+    ctx.restore();
+
     ctx.fillStyle    = '#ffffff';
-    ctx.font         = 'bold 28px sans-serif';
-    ctx.textAlign    = 'center';
+    ctx.font         = 'bold 26px sans-serif';
+    ctx.textAlign    = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(total, cx, cy + 2);
+    ctx.fillText(total, cx - 6, 44);
 
-    // Несёт сейчас (маленькое, снизу)
+    // Несёт сейчас
     if (carried > 0) {
-      ctx.fillStyle    = CRYSTAL_COLOR;
-      ctx.font         = '12px sans-serif';
-      ctx.textBaseline = 'top';
-      ctx.fillText(`+${carried}`, cx, cy + 18);
+      ctx.fillStyle = CRYSTAL_COLOR;
+      ctx.font      = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(`+${carried}`, cx, TOP_H - 4);
     }
   }
 
@@ -184,19 +183,18 @@ const HUD = (() => {
     const alive = typeof Crew !== 'undefined' ? Crew.getAlive() : total;
 
     const rx = W - TOP_PAD;
-    const ry = TOP_H / 2;
-    const iconSize = 24;
-    const gap      = 30;
+    const iconSize = 22;
+    const gap      = 28;
 
-    ctx.fillStyle    = 'rgba(150,220,255,0.7)';
-    ctx.font         = '11px sans-serif';
+    ctx.fillStyle    = 'rgba(150,220,255,0.8)';
+    ctx.font         = 'bold 11px sans-serif';
     ctx.textAlign    = 'right';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('ЭКИПАЖ', rx, ry - 12);
+    ctx.textBaseline = 'top';
+    ctx.fillText('ЭКИПАЖ', rx, 8);
 
     for (let i = 0; i < total; i++) {
       const ix = rx - (total - 1 - i) * gap - iconSize / 2;
-      const iy = ry + 4;
+      const iy = 40;
       _drawCrewIcon(ctx, ix, iy, iconSize, i < alive);
     }
   }

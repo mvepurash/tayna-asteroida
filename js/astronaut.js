@@ -155,19 +155,15 @@ const Astronaut = (() => {
   // Вызывается при захвате — замораживаем астронавта до анимации смерти
   function freeze() {
     if (state === STATE.DEAD) return;
-    // Останавливаем движение немедленно
-    if (state === STATE.MOVING) {
-      // Фиксируем текущую интерполированную позицию
-      state    = STATE.IDLE;
-      node     = moveFrom || node;  // возвращаем на исходную платформу
-      const pos = getPos(node);
-      if (pos) { renderX = pos.x; renderY = pos.y; }
-      moveT    = 0;
-      moveTo   = null;
-      moveFrom = null;
-    }
-    isMining = false;
+    // Останавливаем движение — фиксируем текущую визуальную позицию
+    // renderX/Y уже содержат интерполированное положение — НЕ меняем их
+    state       = STATE.IDLE;
+    moveT       = 0;
+    moveTo      = null;
+    moveFrom    = null;
+    isMining    = false;
     inputBuffer = null;
+    // node остаётся прежним — астронавт "завис" там где был визуально
   }
 
   // Вызов из game.js при захвате щупальцем
@@ -185,17 +181,21 @@ const Astronaut = (() => {
 
   // Главный update — вызывается каждый кадр из game.js
   function update(dt) {
-    // Мёртвый не двигается
+    // Мёртвый не двигается и не обновляет позицию
     if (state === STATE.DEAD) {
-      return;
+      return; // renderX/Y остаются там где умер
     }
     if (state === STATE.MOVING && moveT < 0.05) {
       console.log('[Astro] update MOVING: from='+moveFrom+' to='+moveTo+' t='+moveT.toFixed(3));
     }
     if (state !== STATE.MOVING) {
       // Стоим — renderX/Y = позиция текущего узла
+      // НО только если есть валидный node с позицией
       const pos = getPos(node);
-      if (pos) { renderX = pos.x; renderY = pos.y; }
+      if (pos && state === STATE.IDLE) { 
+        renderX = pos.x; 
+        renderY = pos.y; 
+      }
       return;
     }
 
