@@ -25,7 +25,7 @@ const HUD = (() => {
   const DPAD_GAP = 4;
 
   // Кнопка добычи
-  const MINE_X   = W - 110;
+  const MINE_X   = W - 80;
   const MINE_Y   = BOT_Y + 40;
   const MINE_R   = 48;
 
@@ -285,32 +285,28 @@ const HUD = (() => {
     const carried = Crystals.getCarried();
 
     // Рекорд
-    ctx.fillStyle    = 'rgba(150,220,255,0.6)';
-    ctx.font         = '11px sans-serif';
+    ctx.fillStyle    = 'rgba(150,220,255,0.7)';
+    ctx.font         = 'bold 11px sans-serif';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText('РЕКОРД', cx, y0);
 
     ctx.fillStyle    = '#ffffff';
-    ctx.font         = 'bold 22px sans-serif';
+    ctx.font         = 'bold 24px sans-serif';
     ctx.textBaseline = 'top';
     ctx.fillText(record, cx, y0 + 14);
 
     // Добыто за рейс
-    ctx.fillStyle    = 'rgba(150,220,255,0.6)';
-    ctx.font         = '11px sans-serif';
+    ctx.fillStyle    = 'rgba(150,220,255,0.7)';
+    ctx.font         = 'bold 11px sans-serif';
     ctx.textBaseline = 'top';
-    ctx.fillText('ДОБЫТО ЗА РЕЙС', cx, y0 + 60);
-
-    ctx.save();
-    ctx.translate(cx - 22, y0 + 74);
-    _drawCrystalIcon(ctx, 10);
-    ctx.restore();
+    ctx.fillText('ДОБЫТО ЗА РЕЙС', cx, y0 + 52);
 
     ctx.fillStyle    = CRYSTAL_COLOR;
-    ctx.font         = 'bold 18px sans-serif';
+    ctx.font         = 'bold 20px sans-serif';
     ctx.textBaseline = 'top';
-    ctx.fillText(carried, cx + 8, y0 + 74);
+    ctx.textAlign    = 'center';
+    ctx.fillText(carried, cx, y0 + 66);
   }
 
   // Кнопка ДОБЫЧА

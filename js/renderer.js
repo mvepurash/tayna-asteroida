@@ -34,6 +34,8 @@ const Renderer = (() => {
   // Статичный спрайт шаттла
   let shuttleImg = null;
   let bgImg      = null;  // фон кратера
+  let lairImg    = null;  // спрайт логова
+  let platformImg = null; // спрайт платформы
 
   // Состояние текущей анимации
   const anim = {
@@ -61,6 +63,12 @@ const Renderer = (() => {
     // Фон кратера
     bgImg = new Image();
     bgImg.src = 'assets/bg_crater.png';
+    lairImg = new Image();
+    lairImg.onload  = () => console.log('[Renderer] lair.png загружен', lairImg.width, lairImg.height);
+    lairImg.onerror = () => console.error('[Renderer] lair.png НЕ ЗАГРУЖЕН');
+    lairImg.src = 'assets/sprites/lair.png';
+    platformImg = new Image();
+    platformImg.src = 'assets/sprites/platform.png';
   }
 
   // ---------- Обновление кадра анимации ----------
@@ -164,17 +172,12 @@ const Renderer = (() => {
 
   function draw(dt) {
     ctx.clearRect(0, 0, W, H);
-    // Тёмный фон для всего экрана
-    ctx.fillStyle = '#0a0a12';
-    ctx.fillRect(0, 0, W, H);
-
-    // Фон кратера только в игровой зоне
-    const TOP_HUD = typeof HUD !== 'undefined' ? HUD.TOP_H : 110;
-    const BOT_HUD = typeof HUD !== 'undefined' ? HUD.BOT_Y : 706;
-    const gameZoneH = BOT_HUD - TOP_HUD;
-
+    // Фон кратера на весь экран
     if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
-      ctx.drawImage(bgImg, 0, TOP_HUD, W, gameZoneH);
+      ctx.drawImage(bgImg, 0, 0, W, H);
+    } else {
+      ctx.fillStyle = '#0a0a12';
+      ctx.fillRect(0, 0, W, H);
     }
 
     _drawConnections();
