@@ -93,20 +93,21 @@ const HUD = (() => {
     // Панели художника рисуем вместо плоской чёрной плашки
     const panelH = 98;
     const panelW = panelH * 1.5;
+    const panelWLeft = panelW * (123 / 132); // компенсация: рамка спрайта panelLeft шире рамки panelCrew на исходном арте — выравнено по запросу пользователя 12.07.2026
     const leftX  = 4;
     const rightX = W - panelW - 4;
     const panelY = (TOP_H - panelH) / 2 - 5; // ЗАФИКСИРОВАНО 21.06.2026 — НЕ МЕНЯТЬ без явного запроса
 
     if (_hudImgPanelLeft.complete && _hudImgPanelLeft.naturalWidth) {
-      ctx.drawImage(_hudImgPanelLeft, leftX, panelY, panelW, panelH);
+      ctx.drawImage(_hudImgPanelLeft, leftX, panelY, panelWLeft, panelH);
     }
     const crewImg = _crewPanelImg();
     if (crewImg && crewImg.complete && crewImg.naturalWidth) {
       ctx.drawImage(crewImg, rightX, panelY, panelW, panelH);
     }
 
-    _drawOxygen(ctx, leftX, panelY, panelW, panelH);
-    _drawCrystals(ctx, leftX, panelY, panelW, panelH);
+    _drawOxygen(ctx, leftX, panelY, panelWLeft, panelH);
+    _drawCrystals(ctx, leftX, panelY, panelWLeft, panelH);
     _drawCrew(ctx, rightX, panelY, panelW, panelH);
   }
 
