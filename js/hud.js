@@ -46,9 +46,9 @@ const HUD = (() => {
   const DPAD_GAP = 7;
 
   // Кнопка добычи
-  const MINE_X   = 395;            // измерено по спрайту: центр кольца x=395
-  const MINE_Y   = BOT_Y + 14;   // центр = MINE_Y + MINE_R = BOT_Y + 61 (измерено: y=61)
-  const MINE_R   = 47;            // измерено по спрайту: золотое кольцо r≈47px
+  const MINE_X   = 396;            // измерено по спрайту (circle-fit): центр кольца x=395.7
+  const MINE_Y   = BOT_Y + 16;   // центр = MINE_Y + MINE_R = BOT_Y + 64 (измерено circle-fit: y=64.0)
+  const MINE_R   = 48;            // измерено по спрайту (circle-fit): золотое кольцо r≈48.5px
 
   // Иконка кристалла (заглушка — потом заменим спрайтом)
   const CRYSTAL_COLOR = '#00d4ff';
