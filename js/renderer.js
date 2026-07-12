@@ -19,7 +19,7 @@ const Renderer = (() => {
     move:  { frames: [], fps: 8,   type: 'pingpong' },
     mine:  { frames: [], fps: 6,   type: 'seq_loop' },
     death: { frames: [], fps: 2,   type: 'once'     }, // 3 кадра × 0.5с = 1.5с
-    spawn: { frames: [], fps: 8.0, type: 'once'     }, // 5 кадров × 8fps = 0.625 сек
+    spawn: { frames: [], fps: 1.0, type: 'once'     }, // 5 кадров × 1fps = 5.0 сек, синхронно с SPAWN_DURATION
     // spawn — спрайт астронавта = idle_01, анимация на шаттле отдельно
   };
 
