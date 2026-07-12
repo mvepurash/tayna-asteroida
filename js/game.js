@@ -1,3 +1,4 @@
+// ===== game.js =====
 // ============================================================
 // game.js — главный цикл
 // БЕЗ setTimeout — все таймеры через dt (работает на file://)
@@ -22,7 +23,7 @@ const Game = (() => {
     Save.getRecord();
     Renderer.init();
     Crew.init();
-    Astronaut.init();
+    Astronaut.startSpawning();
     Tentacles.init();
     Oxygen.init();
     Crystals.init();
@@ -54,10 +55,10 @@ const Game = (() => {
           sessionTime = 0;
           speedMultiplier = 1;
         }
-        Astronaut.init();
+        Astronaut.startSpawning();
         Oxygen.reset();
         Crystals.resetRun();
-        invincTimer  = 3.0;  // 3 сек неуязвимости
+        invincTimer  = 3.0;  // 3 сек неуязвимости (начнётся после spawn-анимации)
         waitingDeath = false;
         deathTimer   = 0;
       }
@@ -74,8 +75,9 @@ const Game = (() => {
     Tentacles.update(dt);
     Oxygen.update(dt);
 
-    // Таймер неуязвимости после respawn
-    if (invincTimer > 0) invincTimer -= dt;
+    // Таймер неуязвимости после respawn — не тикает во время spawn-анимации,
+    // чтобы все 3 секунды мигания шли уже после видимого появления астронавта
+    if (invincTimer > 0 && !Astronaut.isSpawning()) invincTimer -= dt;
 
     // Автодобыча при удержании кнопки
     if (Astronaut.getIsMining()) {
@@ -100,14 +102,18 @@ const Game = (() => {
       if (captured && Astronaut.getState() !== Astronaut.STATE.DEAD) {
         Astronaut.freeze();  // мгновенно останавливаем движение
         waitingDeath = true;
-        deathTimer   = 0.8;
+        deathTimer   = 0.1;  // почти мгновенно → сразу анимация смерти
       }
     }
 
     // Возврат на шаттл
     _checkShuttleReturn();
 
-    Renderer.draw(dt);
+    try {
+      Renderer.draw(dt);
+    } catch(e) {
+      console.error('[Game] Renderer.draw error:', e.message);
+    }
     requestAnimationFrame(loop);
   }
 
@@ -140,7 +146,7 @@ const Game = (() => {
 
     // Следующий астронавт через 2 сек
     waitingRespawn = true;
-    respawnTimer   = 2.0;
+    respawnTimer   = 2.5;  // 1.5с анимация смерти + 1с пауза
   }
 
   function pause() {
@@ -183,3 +189,5 @@ const Game = (() => {
   };
 
 })();
+
+

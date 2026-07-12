@@ -1,3 +1,4 @@
+// ===== astronaut.js =====
 // ============================================================
 // astronaut.js — state-машина астронавта
 // Состояния: IDLE | MOVING | MINING | DEAD | SPAWNING
@@ -40,6 +41,10 @@ const Astronaut = (() => {
 
   // Добыча
   let isMining    = false;
+
+  // Spawn-анимация (5 кадров при появлении/респавне)
+  let spawnTimer    = 0;     // секунд осталось до конца анимации появления
+  const SPAWN_DURATION = 5.0; // секунд — 5 кадров × 1fps
 
   // Позиция для рендера (интерполируется)
   let renderX     = 0;
@@ -90,6 +95,24 @@ const Astronaut = (() => {
     renderX   = startPos ? startPos.x : 240;
     renderY   = startPos ? startPos.y : 182;
     isMining  = false;
+  }
+
+  // Запускает анимацию появления (5 кадров) на платформе 1.
+  // Вызывается из game.js вместо/после init() при старте и при respawn.
+  function startSpawning() {
+    state      = STATE.SPAWNING;
+    node       = 1;
+    prevNode   = null;
+    isMining   = false;
+    spawnTimer = SPAWN_DURATION;
+    // Стартуем из ворот шаттла (нижняя часть здания, откуда выходит астронавт)
+    const shuttle = PLATFORMS['shuttle'] || { x: 240, y: 84 };
+    renderX = shuttle.x;
+    renderY = shuttle.y + 81; // ворота шаттла ≈ на 81px ниже верхушки
+  }
+
+  function isSpawning() {
+    return state === STATE.SPAWNING;
   }
 
   // Вызывается из input.js при нажатии D-pad
@@ -171,16 +194,41 @@ const Astronaut = (() => {
     if (state === STATE.DEAD) return;
     state    = STATE.DEAD;
     isMining = false;
-    moveT    = 0;        // сбрасываем движение
+    moveT    = 0;
     moveTo   = null;
     moveFrom = null;
-    // Фиксируем позицию там где был в момент смерти
-    // renderX/Y уже содержат текущую позицию
+    // Фиксируем точно на центре платформы где произошёл захват
+    const deathPos = getPos(node) || getPos(String(node));
+    if (deathPos) {
+      renderX = deathPos.x;
+      renderY = deathPos.y;
+    }
     if (typeof onDeath === 'function') onDeath();
   }
 
   // Главный update — вызывается каждый кадр из game.js
   function update(dt) {
+    // Spawn-анимация: блокирует движение, но не блокирует рендер.
+    // По истечении SPAWN_DURATION — автоматический переход в IDLE.
+    if (state === STATE.SPAWNING) {
+      spawnTimer -= dt;
+      if (spawnTimer <= 0) {
+        spawnTimer = 0;
+        state = STATE.IDLE;
+      }
+      // Позиция астронавта интерполируется от шаттла до платформы 1 по кадрам
+      // 5 кадров с ease-out: быстро вылетает, медленно приземляется
+      const shuttleRaw = getPos('shuttle') || { x: 240, y: 84 };
+      const shuttle  = { x: shuttleRaw.x, y: shuttleRaw.y + 81 }; // ворота
+      const platform = getPos('1')       || { x: 240, y: 246 };
+      const progress = 1 - (spawnTimer / SPAWN_DURATION);  // 0→1
+      // ease-out квадратичный: быстрый старт, торможение у платформы
+      const eased = 1 - Math.pow(1 - progress, 2);
+      renderX = shuttle.x + (platform.x - shuttle.x) * eased;
+      renderY = shuttle.y + (platform.y - shuttle.y) * eased;
+      return;
+    }
+
     // Мёртвый не двигается и не обновляет позицию
     if (state === STATE.DEAD) {
       return; // renderX/Y остаются там где умер
@@ -369,6 +417,10 @@ const Astronaut = (() => {
     getDiagChosen,
     getIsMining,
     isOnNode,
+    startSpawning,
+    isSpawning,
   };
 
 })();
+
+

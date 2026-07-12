@@ -1,3 +1,4 @@
+// ===== hud.js =====
 // ============================================================
 // hud.js — интерфейс поверх канваса
 // Верхняя панель: O2, кристаллы, экипаж
@@ -5,6 +6,26 @@
 // ============================================================
 
 const HUD = (() => {
+  // ===== Спрайты кнопок D-pad =====
+  const _BTN_DATA = {
+    up:    'assets/sprites/hud/dpad_up.png',
+    down:  'assets/sprites/hud/dpad_down.png',
+    left:  'assets/sprites/hud/dpad_left.png',
+    right: 'assets/sprites/hud/dpad_right.png',
+  };
+  const _btnImgs = {};
+  (() => {
+    for (const [k,v] of Object.entries(_BTN_DATA)) {
+      const img = new Image();
+      img.onload = () => { img._ready = true; };
+      img.src = v;
+      // base64 может загрузиться синхронно
+      if (img.complete && img.naturalWidth > 0) img._ready = true;
+      _btnImgs[k] = img;
+    }
+  })();
+  // ================================
+
 
   // ---------- Размеры (внутренние единицы канваса 540×960) ----------
   const W = CONFIG.CANVAS_W;   // 480
@@ -12,26 +33,38 @@ const HUD = (() => {
 
   // Верхняя панель
   const TOP_H    = 110;
-  const TOP_PAD  = 10;
+  const TOP_PAD  = 8;
 
   // Нижняя панель
-  const BOT_H    = 148;
-  const BOT_Y    = H - BOT_H;
+  const BOT_H    = 179;          // высота панели — НЕ МЕНЯТЬ
+  const BOT_Y      = H - BOT_H;   // верхняя граница зоны управления
 
   // D-pad
-  const DPAD_X   = 30;
-  const DPAD_Y   = BOT_Y + 30;
-  const DPAD_BTN = 42;   // размер кнопки
-  const DPAD_GAP = 4;
+  const DPAD_X   = 44;   // cx_cross=79   // центр крестовины X = 55
+  const DPAD_Y   = BOT_Y + 34;   // cy крестовины от верха спрайта   // cy_cross=63   // центр крестовины Y = BOT_Y+91
+  const DPAD_BTN = 28;
+  const DPAD_GAP = 7;
 
   // Кнопка добычи
-  const MINE_X   = W - 80;
-  const MINE_Y   = BOT_Y + 40;
-  const MINE_R   = 48;
+  const MINE_X   = 395;            // измерено по спрайту: центр кольца x=395
+  const MINE_Y   = BOT_Y + 14;   // центр = MINE_Y + MINE_R = BOT_Y + 61 (измерено: y=61)
+  const MINE_R   = 47;            // измерено по спрайту: золотое кольцо r≈47px
 
   // Иконка кристалла (заглушка — потом заменим спрайтом)
   const CRYSTAL_COLOR = '#00d4ff';
 
+  // === HUD_SPRITES: base64 панели от художника ===
+  const HUD_SPRITES = {
+    panelLeft: 'assets/sprites/hud/panel_left.png',
+    panelCrew: 'assets/sprites/hud/panel_crew.png',
+    helmet: 'assets/sprites/hud/helmet.png',
+    botPanel: 'assets/sprites/hud/bot_panel.png',
+  };
+
+  const _hudImgPanelLeft = new Image(); _hudImgPanelLeft.src = HUD_SPRITES.panelLeft;
+  const _hudImgPanelCrew = new Image(); _hudImgPanelCrew.src = HUD_SPRITES.panelCrew;
+  const _hudImgHelmet    = new Image(); _hudImgHelmet.src    = HUD_SPRITES.helmet;
+  const _hudImgBotPanel  = new Image(); _hudImgBotPanel.src  = HUD_SPRITES.botPanel;
   // ---------- Состояние D-pad (подсветка при нажатии) ----------
   const dpadPressed = { up: false, down: false, left: false, right: false };
 
@@ -42,6 +75,7 @@ const HUD = (() => {
   // ---------- Анимация мигания O2 при критическом уровне ----------
   let blinkTimer = 0;
   let blinkOn    = true;
+
 
   // ---------- Отрисовка ----------
 
@@ -56,101 +90,82 @@ const HUD = (() => {
   // ── Верхняя панель ──────────────────────────────────────────
 
   function _drawTopPanel(ctx) {
-    // Фон
-    ctx.fillStyle = 'rgba(0,0,0,0.72)';
-    ctx.fillRect(0, 0, W, TOP_H);
-    ctx.strokeStyle = 'rgba(42,244,255,0.25)';
-    ctx.lineWidth   = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, TOP_H);
-    ctx.lineTo(W, TOP_H);
-    ctx.stroke();
+    // Панели художника рисуем вместо плоской чёрной плашки
+    const panelH = 98;
+    const panelW = panelH * 1.5;
+    const leftX  = 4;
+    const rightX = W - panelW - 4;
+    const panelY = (TOP_H - panelH) / 2 - 5; // ЗАФИКСИРОВАНО 21.06.2026 — НЕ МЕНЯТЬ без явного запроса
 
-    _drawOxygen(ctx);
-    _drawCrystals(ctx);
-    _drawCrew(ctx);
+    if (_hudImgPanelLeft.complete && _hudImgPanelLeft.naturalWidth) {
+      ctx.drawImage(_hudImgPanelLeft, leftX, panelY, panelW, panelH);
+    }
+    const crewImg = _crewPanelImg();
+    if (crewImg && crewImg.complete && crewImg.naturalWidth) {
+      ctx.drawImage(crewImg, rightX, panelY, panelW, panelH);
+    }
+
+    _drawOxygen(ctx, leftX, panelY, panelW, panelH);
+    _drawCrystals(ctx, leftX, panelY, panelW, panelH);
+    _drawCrew(ctx, rightX, panelY, panelW, panelH);
   }
 
-  // O2 блок (левая треть)
-  function _drawOxygen(ctx) {
+  // Сейчас используем единственную панель ЭКИПАЖ (силуэты) + накладываем шлемы кодом
+  function _crewPanelImg() {
+    return _hudImgPanelCrew;
+  }
+
+  // O2 блок — рисуется поверх панели художника
+  function _drawOxygen(ctx, px, py, pw, ph) {
     const alert  = Oxygen.getAlertLevel();
     const ratio  = Oxygen.getRatio();
     const secs   = Oxygen.getSeconds();
 
-    const bx = TOP_PAD;
-    const by = 14;
-    const bw = 150;
-    const bh = 22;
+    // ЗАФИКСИРОВАНО 21.06.2026 — НЕ МЕНЯТЬ без явного запроса
+    // Координаты перезамерены на актуальной версии панели (320x213)
+    const sx = px + pw * 0.2250;
+    const sy = py + ph * 0.3521;
+    const sw = pw * 0.4094;
+    const sh = ph * 0.0751;
 
-    // Иконка O2
-    ctx.fillStyle = alert === 2 ? (blinkOn ? '#ff3333' : '#880000')
-                  : alert === 1 ? '#ffaa00' : '#2af4ff';
-    ctx.font      = 'bold 13px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('O₂', bx, by + bh / 2);
-
-    // Метка "КИСЛОРОД"
-    ctx.fillStyle = 'rgba(150,220,255,0.7)';
-    ctx.font      = '11px sans-serif';
-    ctx.fillText('КИСЛОРОД', bx, by - 4);
-
-    // Шкала — фон
-    const sx = bx + 26;
-    ctx.fillStyle = 'rgba(255,255,255,0.1)';
-    ctx.beginPath();
-    ctx.roundRect(sx, by, bw, bh, 4);
-    ctx.fill();
-
-    // Шкала — заполнение
     const barColor = alert === 2 ? (blinkOn ? '#ff3333' : '#881100')
                    : alert === 1 ? '#ffaa00' : '#2af4ff';
     ctx.fillStyle = barColor;
-    ctx.beginPath();
-    ctx.roundRect(sx, by, Math.max(4, bw * ratio), bh, 4);
-    ctx.fill();
+    ctx.globalAlpha = 0.85;
+    ctx.fillRect(sx, sy, Math.max(2, sw * ratio), sh);
+    ctx.globalAlpha = 1;
 
-    // Секунды
-    ctx.fillStyle    = '#ffffff';
-    ctx.font         = 'bold 13px sans-serif';
-    ctx.textAlign    = 'left';
+    // ЗАФИКСИРОВАНО 21.06.2026 — НЕ МЕНЯТЬ без явного запроса
+    const timerCx = px + pw * 0.7859;
+    const timerCy = py + ph * 0.3897;
+    ctx.fillStyle    = alert === 2 ? (blinkOn ? '#ff3333' : '#ffffff') : '#ffffff';
+    ctx.font         = `bold ${Math.round(ph*0.13)}px sans-serif`;
+    ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`${secs} сек.`, sx + 4, by + bh / 2);
+    ctx.fillText(`${secs}с`, timerCx, timerCy);
   }
 
-  // Кристаллы (центр)
-  function _drawCrystals(ctx) {
+  // Кристаллы — иконка уже в картинке панели (левый низ), число рисуем в новой рамке справа от иконки
+  function _drawCrystals(ctx, px, py, pw, ph) {
+    const total = Crystals.getSessionTotal();
     const carried = Crystals.getCarried();
-    const total   = Crystals.getSessionTotal();
 
-    const cx = W / 2;
-
-    // Метка
-    ctx.fillStyle    = 'rgba(150,220,255,0.8)';
-    ctx.font         = 'bold 11px sans-serif';
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('КРИСТАЛЛЫ', cx, 8);
-
-    // Иконка + число в одну строку
-    ctx.save();
-    ctx.translate(cx - 24, 38);
-    _drawCrystalIcon(ctx, 14);
-    ctx.restore();
+    // ЗАФИКСИРОВАНО 21.06.2026 — НЕ МЕНЯТЬ без явного запроса
+    const tx = px + pw * 0.3234;
+    const ty = py + ph * 0.5540;
 
     ctx.fillStyle    = '#ffffff';
-    ctx.font         = 'bold 26px sans-serif';
-    ctx.textAlign    = 'left';
+    ctx.font         = `bold ${Math.round(ph*0.13)}px sans-serif`;
+    ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(total, cx - 6, 44);
+    ctx.fillText(total, tx, ty);
 
-    // Несёт сейчас
     if (carried > 0) {
       ctx.fillStyle = CRYSTAL_COLOR;
-      ctx.font      = '11px sans-serif';
+      ctx.font      = `${Math.round(ph*0.10)}px sans-serif`;
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(`+${carried}`, cx, TOP_H - 4);
+      ctx.textBaseline = 'top';
+      ctx.fillText(`+${carried}`, tx, ty + ph * 0.12);
     }
   }
 
@@ -177,64 +192,47 @@ const HUD = (() => {
     ctx.globalAlpha = 1;
   }
 
-  // Экипаж (правая треть)
-  function _drawCrew(ctx) {
+  // Экипаж — панель художника + шлемы накладываются кодом поверх гнёзд
+  // Координаты гнёзд измерены на исходнике панели 1536x1024:
+  // центры (355,500), (770,500), (1180,500), доля от ширины/высоты файла:
+  // ЗАФИКСИРОВАНО пользователем 21.06.2026 — НЕ МЕНЯТЬ без явного запроса
+  const CREW_SOCKETS = [
+    // Координаты измерены точно по жёлтым меткам художника на исходнике 1536x1024
+    { xRatio: 379.6 / 1536, yRatio: 525.8 / 1024 },
+    { xRatio: 759.6 / 1536, yRatio: 525.9 / 1024 },
+    { xRatio: 1135.2 / 1536, yRatio: 525.8 / 1024 },
+  ];
+
+  function _drawCrew(ctx, px, py, pw, ph) {
     const total = typeof Crew !== 'undefined' ? Crew.getTotal() : CONFIG.CREW_SIZE;
     const alive = typeof Crew !== 'undefined' ? Crew.getAlive() : total;
 
-    const rx = W - TOP_PAD;
-    const iconSize = 22;
-    const gap      = 28;
+    if (!_hudImgHelmet.complete || !_hudImgHelmet.naturalWidth) return;
 
-    ctx.fillStyle    = 'rgba(150,220,255,0.8)';
-    ctx.font         = 'bold 11px sans-serif';
-    ctx.textAlign    = 'right';
-    ctx.textBaseline = 'top';
-    ctx.fillText('ЭКИПАЖ', rx, 8);
+    const helmetW = pw * 0.26; // ЗАФИКСИРОВАНО пользователем 21.06.2026 — НЕ МЕНЯТЬ без явного запроса
+    const helmetH = helmetW * (_hudImgHelmet.naturalHeight / _hudImgHelmet.naturalWidth);
 
-    for (let i = 0; i < total; i++) {
-      const ix = rx - (total - 1 - i) * gap - iconSize / 2;
-      const iy = 40;
-      _drawCrewIcon(ctx, ix, iy, iconSize, i < alive);
-    }
-  }
-
-  function _drawCrewIcon(ctx, x, y, size, alive) {
-    // Шлем астронавта — простая иконка
-    ctx.fillStyle   = alive ? '#ffffff' : 'rgba(255,255,255,0.2)';
-    ctx.strokeStyle = alive ? '#2af4ff' : 'rgba(42,244,255,0.2)';
-    ctx.lineWidth   = 1.5;
-    // Голова
-    ctx.beginPath();
-    ctx.arc(x, y - size * 0.1, size * 0.4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    // Тело
-    ctx.beginPath();
-    ctx.roundRect(x - size * 0.3, y + size * 0.3, size * 0.6, size * 0.5, 3);
-    ctx.fill();
-    ctx.stroke();
-    // Визор
-    if (alive) {
-      ctx.fillStyle = '#00aaff';
-      ctx.beginPath();
-      ctx.arc(x, y - size * 0.1, size * 0.22, 0, Math.PI * 2);
-      ctx.fill();
+    for (let i = 0; i < total && i < CREW_SOCKETS.length; i++) {
+      if (i >= alive) continue; // погибший — оставляем тёмный силуэт из панели, ничего не рисуем
+      const s = CREW_SOCKETS[i];
+      const cx = px + pw * s.xRatio;
+      const cy = py + ph * s.yRatio;
+      ctx.drawImage(_hudImgHelmet, cx - helmetW / 2, cy - helmetH / 2, helmetW, helmetH);
     }
   }
 
   // ── Нижняя панель ───────────────────────────────────────────
 
   function _drawBottomPanel(ctx) {
-    // Полупрозрачный фон
-    ctx.fillStyle = 'rgba(0,0,0,0.65)';
-    ctx.fillRect(0, BOT_Y, W, BOT_H);
-    ctx.strokeStyle = 'rgba(42,244,255,0.2)';
-    ctx.lineWidth   = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, BOT_Y);
-    ctx.lineTo(W, BOT_Y);
-    ctx.stroke();
+    // Solid fill — перекрывает cave-background полностью, убирает любую прозрачность
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, BOT_Y - 2, W, BOT_H + 2); // +2px перекрытие чтобы не было щели
+    // Спрайт нижней панели
+    if (_hudImgBotPanel.complete && _hudImgBotPanel.naturalWidth) {
+      ctx.drawImage(_hudImgBotPanel, 0, BOT_Y, W, BOT_H);
+    }
 
     _drawDpad(ctx);
     _drawStats(ctx);
@@ -243,73 +241,95 @@ const HUD = (() => {
 
   // D-pad
   function _drawDpad(ctx) {
-    const dirs = [
-      { dir: 'up',    dx: 0,  dy: -1 },
-      { dir: 'down',  dx: 0,  dy:  1 },
-      { dir: 'left',  dx: -1, dy:  0 },
-      { dir: 'right', dx:  1, dy:  0 },
+    const BTN = 40; // размер кнопки
+    const H   = BTN / 2;
+
+    // Центры кнопок — замерены по спрайту панели
+    const buttons = [
+      // ОРИГИНАЛ (пользователь, тюнер): up(78,31) left(43,63) right(114,65) down(78,87)
+      // СИММЕТРИЧНЫЕ (применено): up(78,31) left(43,64) right(113,64) down(78,87)
+      // Центр (78,64), LEFT↔RIGHT ±35px, UP↕DOWN ±28px
+      { dir: 'up',    cx: 78,  cy: BOT_Y + 31 },
+      { dir: 'left',  cx: 43,  cy: BOT_Y + 64 },
+      { dir: 'right', cx: 113, cy: BOT_Y + 64 },
+      { dir: 'down',  cx: 78,  cy: BOT_Y + 87 },
     ];
 
-    const cx = DPAD_X + DPAD_BTN + DPAD_GAP;
-    const cy = DPAD_Y + DPAD_BTN + DPAD_GAP;
-
-    for (const { dir, dx, dy } of dirs) {
-      const bx = cx + dx * (DPAD_BTN + DPAD_GAP) - DPAD_BTN / 2;
-      const by = cy + dy * (DPAD_BTN + DPAD_GAP) - DPAD_BTN / 2;
-      const pressed = dpadPressed[dir];
-
-      // Кнопка
-      ctx.fillStyle   = pressed ? 'rgba(42,244,255,0.35)' : 'rgba(42,244,255,0.12)';
-      ctx.strokeStyle = pressed ? '#2af4ff' : 'rgba(42,244,255,0.45)';
-      ctx.lineWidth   = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(bx, by, DPAD_BTN, DPAD_BTN, 10);
-      ctx.fill();
-      ctx.stroke();
-
-      // Стрелка
-      const arrows = { up: '▲', down: '▼', left: '◀', right: '▶' };
-      ctx.fillStyle    = pressed ? '#ffffff' : 'rgba(42,244,255,0.8)';
-      ctx.font         = `${DPAD_BTN * 0.45}px sans-serif`;
-      ctx.textAlign    = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(arrows[dir], bx + DPAD_BTN / 2, by + DPAD_BTN / 2);
+    for (const { dir, cx, cy } of buttons) {
+      const pressed = !!dpadPressed[dir];
+      const img = _btnImgs[dir];
+      if (img && (img._ready || (img.complete && img.naturalWidth > 0))) {
+        if (pressed) {
+          ctx.save();
+          // Вариант 1: физическое вдавливание
+          // 1. Голубой ореол вокруг позиции кнопки
+          ctx.shadowColor = '#00e5ff';
+          ctx.shadowBlur  = 18;
+          // 2. Смещение вниз-вправо на 3px (имитация нажатия)
+          const ox = 2, oy = 3;
+          // 3. Уменьшение до 82%
+          const scale = 0.82;
+          const sb = BTN * scale;
+          ctx.globalAlpha = 0.95;
+          ctx.drawImage(img, cx - sb / 2 + ox, cy - sb / 2 + oy, sb, sb);
+          // 4. Тёмная тень сверху-слева — усиливает ощущение глубины
+          ctx.shadowBlur  = 0;
+          ctx.globalAlpha = 0.18;
+          ctx.fillStyle   = '#000000';
+          ctx.beginPath();
+          ctx.roundRect(cx - sb / 2 + ox - 1, cy - sb / 2 + oy - 1, sb, sb, 4);
+          ctx.fill();
+          ctx.restore();
+        } else {
+          ctx.drawImage(img, cx - H, cy - H, BTN, BTN);
+        }
+      } else {
+        // Fallback — яркая стрелка пока спрайт грузится
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,30,50,0.7)';
+        ctx.strokeStyle = '#2af4ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(cx-H, cy-H, BTN, BTN, 6);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#2af4ff';
+        ctx.font = `bold ${BTN*0.5}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#2af4ff';
+        ctx.shadowBlur = 8;
+        const arrows = { up:'▲', down:'▼', left:'◀', right:'▶' };
+        if (pressed) { ctx.fillStyle = '#ffffff'; }
+        ctx.fillText(arrows[dir], cx, cy);
+        ctx.restore();
+      }
     }
   }
 
-  // Статистика (центр нижней панели)
   function _drawStats(ctx) {
-    const cx  = W / 2;
-    const y0  = BOT_Y + 20;
-    const record = Crystals.getRecord();
+    const cx      = W / 2;
+    const record  = Crystals.getRecord();
     const carried = Crystals.getCarried();
 
-    // Рекорд
-    ctx.fillStyle    = 'rgba(150,220,255,0.7)';
-    ctx.font         = 'bold 11px sans-serif';
     ctx.textAlign    = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('РЕКОРД', cx, y0);
+    ctx.textBaseline = 'middle';
 
-    ctx.fillStyle    = '#ffffff';
-    ctx.font         = 'bold 24px sans-serif';
-    ctx.textBaseline = 'top';
-    ctx.fillText(record, cx, y0 + 14);
+    ctx.fillStyle = 'rgba(150,220,255,0.75)';
+    ctx.font      = 'bold 10px sans-serif';
+    ctx.fillText('РЕКОРД', cx, BOT_Y + 33);
 
-    // Добыто за рейс
-    ctx.fillStyle    = 'rgba(150,220,255,0.7)';
-    ctx.font         = 'bold 11px sans-serif';
-    ctx.textBaseline = 'top';
-    ctx.fillText('ДОБЫТО ЗА РЕЙС', cx, y0 + 52);
+    ctx.fillStyle = '#ffffff';
+    ctx.font      = 'bold 20px sans-serif';
+    ctx.fillText(record, cx, BOT_Y + 52);
 
-    ctx.fillStyle    = CRYSTAL_COLOR;
-    ctx.font         = 'bold 20px sans-serif';
-    ctx.textBaseline = 'top';
-    ctx.textAlign    = 'center';
-    ctx.fillText(carried, cx, y0 + 66);
+    ctx.fillStyle = 'rgba(150,220,255,0.75)';
+    ctx.font      = 'bold 10px sans-serif';
+    ctx.fillText('ДОБЫТО ЗА РЕЙС', cx, BOT_Y + 68);
+
+    ctx.fillStyle = CRYSTAL_COLOR;
+    ctx.font      = 'bold 16px sans-serif';
+    ctx.fillText(carried, cx, BOT_Y + 83);
   }
-
-  // Кнопка ДОБЫЧА
   function _drawMineButton(ctx) {
     const node   = Astronaut.getNode();
     const st     = Astronaut.getState();
@@ -329,41 +349,44 @@ const HUD = (() => {
     ctx.fillStyle = mining ? 'rgba(255,170,0,0.3)' : (onMine ? 'rgba(180,120,0,0.2)' : 'rgba(80,60,0,0.15)');
     ctx.fill();
 
-    // Иконка кристалла
+    // Иконка кристалла — фиксированный размер, чтобы кнопка не "прыгала"
     ctx.save();
-    ctx.translate(MINE_X, MINE_Y + MINE_R - 18);
-    _drawCrystalIcon(ctx, onMine ? 16 : 12);
+    ctx.translate(MINE_X, MINE_Y + MINE_R - 23);
+    _drawCrystalIcon(ctx, 14);
     ctx.restore();
 
-    // Текст
+    // Текст — фиксированный размер шрифта, меняется только цвет/яркость
     ctx.fillStyle    = onMine ? '#ffcc00' : 'rgba(200,160,0,0.4)';
-    ctx.font         = `bold ${onMine ? 14 : 12}px sans-serif`;
+    ctx.font         = 'bold 13px sans-serif';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText('ДОБЫЧА', MINE_X, MINE_Y + MINE_R + 8);
+    ctx.fillText('ДОБЫЧА', MINE_X, MINE_Y + MINE_R + 3);
 
     if (onMine) {
       ctx.fillStyle = 'rgba(255,200,0,0.55)';
       ctx.font      = '10px sans-serif';
-      ctx.fillText('НАЖИМАЙТЕ', MINE_X, MINE_Y + MINE_R + 24);
+      ctx.fillText('НАЖИМАЙТЕ', MINE_X, MINE_Y + MINE_R + 18);
     }
   }
 
   // ---------- Геттеры координат для input.js ----------
   // Возвращает true если точка (px,py) попадает в кнопку D-pad
   function hitDpad(px, py) {
-    const cx = DPAD_X + DPAD_BTN + DPAD_GAP;
-    const cy = DPAD_Y + DPAD_BTN + DPAD_GAP;
-    const dirs = [
-      { dir: 'up',    dx: 0, dy: -1 },
-      { dir: 'down',  dx: 0, dy:  1 },
-      { dir: 'left',  dx:-1, dy:  0 },
-      { dir: 'right', dx: 1, dy:  0 },
+    // ВАЖНО: координаты и размер кнопки должны быть 1-в-1 как в _drawDpad,
+    // иначе зона клика расходится с нарисованными стрелками.
+    const BTN = 40;
+    const H   = BTN / 2;
+    const buttons = [
+      // ОРИГИНАЛ (пользователь, тюнер): up(78,31) left(43,63) right(114,65) down(78,87)
+      // СИММЕТРИЧНЫЕ (применено): up(78,31) left(43,64) right(113,64) down(78,87)
+      // Центр (78,64), LEFT↔RIGHT ±35px, UP↕DOWN ±28px
+      { dir: 'up',    cx: 78,  cy: BOT_Y + 31 },
+      { dir: 'left',  cx: 43,  cy: BOT_Y + 64 },
+      { dir: 'right', cx: 113, cy: BOT_Y + 64 },
+      { dir: 'down',  cx: 78,  cy: BOT_Y + 87 },
     ];
-    for (const { dir, dx, dy } of dirs) {
-      const bx = cx + dx * (DPAD_BTN + DPAD_GAP) - DPAD_BTN / 2;
-      const by = cy + dy * (DPAD_BTN + DPAD_GAP) - DPAD_BTN / 2;
-      if (px >= bx && px <= bx + DPAD_BTN && py >= by && py <= by + DPAD_BTN) {
+    for (const { dir, cx, cy } of buttons) {
+      if (px >= cx - H && px <= cx + H && py >= cy - H && py <= cy + H) {
         return dir;
       }
     }
@@ -386,3 +409,5 @@ const HUD = (() => {
   };
 
 })();
+
+
