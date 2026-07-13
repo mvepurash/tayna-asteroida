@@ -17,7 +17,7 @@ const Renderer = (() => {
   const ANIMS = {
     idle:  { frames: [], fps: 1.5, type: 'pingpong' },
     move:  { frames: [], fps: 8,   type: 'pingpong' },
-    mine:  { frames: [], fps: 6,   type: 'static'   }, // статичная поза приседания — по запросу пользователя 12.07.2026, искры рисуются отдельно частицами
+    mine:  { frames: [], fps: 1.0, type: 'seq_loop' }, // 4 кадра × 1fps = 4.0 сек, плавная смена поз добычи
     death: { frames: [], fps: 2,   type: 'once'     }, // 3 кадра × 0.5с = 1.5с
     spawn: { frames: [], fps: 1.0, type: 'once'     }, // 5 кадров × 1fps = 5.0 сек, синхронно с SPAWN_DURATION
     // spawn — спрайт астронавта = idle_01, анимация на шаттле отдельно
@@ -166,11 +166,6 @@ const Renderer = (() => {
         anim.frame = (anim.frame + 1) % len;
         break;
 
-      case 'static':
-        // Кадр зафиксирован (не анимируется) — используется первый кадр набора
-        anim.frame = 0;
-        break;
-
       case 'once':
         if (anim.frame < len - 1) {
           anim.frame++;
@@ -236,7 +231,6 @@ const Renderer = (() => {
     _drawCrystalDeposit();
     _updateAnim(dt || 0);
     _drawAstronaut();
-    if (Astronaut.getState() === Astronaut.STATE.MINING) _drawMiningSparks(dt || 0);
     if (typeof HUD !== 'undefined') HUD.draw(ctx, dt);
     if (CONFIG.DEBUG) _drawDebug();
   }
@@ -455,45 +449,6 @@ const Renderer = (() => {
     if (Astronaut.getIsDiagonal() && !Astronaut.getDiagChosen()) {
       _drawDiagHint(x, y);
     }
-  }
-
-  // ---------- Искры при добыче ----------
-  let _sparks = [];
-
-  function _drawMiningSparks(dt) {
-    const x = Astronaut.getRenderX();
-    const y = Astronaut.getRenderY();
-
-    // Спавн новых искр
-    if (Math.random() < 0.6) {
-      _sparks.push({
-        x: x + (Math.random() - 0.5) * 16,
-        y: y + 8,
-        vx: (Math.random() - 0.5) * 40,
-        vy: -20 - Math.random() * 30,
-        life: 0.4 + Math.random() * 0.3,
-        age: 0,
-        size: 1.5 + Math.random() * 2,
-      });
-    }
-
-    ctx.save();
-    for (let i = _sparks.length - 1; i >= 0; i--) {
-      const s = _sparks[i];
-      s.age += dt;
-      if (s.age >= s.life) { _sparks.splice(i, 1); continue; }
-      s.x += s.vx * dt;
-      s.y += s.vy * dt;
-      s.vy += 90 * dt; // гравитация — искры падают вниз
-
-      const t = 1 - s.age / s.life;
-      ctx.globalAlpha = t;
-      ctx.fillStyle = t > 0.5 ? '#fff7cc' : '#ffcc33';
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.size * t, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
   }
 
   function _drawSprite(x, y) {
