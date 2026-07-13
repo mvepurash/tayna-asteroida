@@ -1,0 +1,165 @@
+// ============================================================
+// ui_manager.js — состояния игры и UI-экраны (меню, пауза,
+// game over, реклама-заглушка). Вариант А с заделом под Б.
+// ============================================================
+
+const UIManager = (() => {
+
+  const STATE = {
+    MENU:      'menu',
+    LOADING:   'loading',    // задел под вариант Б (LoadingAPI)
+    PLAYING:   'playing',
+    PAUSED:    'paused',
+    SETTINGS:  'settings',
+    GAME_OVER: 'game_over',
+    REWARD_AD: 'reward_ad',  // задел под вариант Б (реальная реклама)
+  };
+
+  let state = STATE.MENU;
+  const screens = {};   // name -> Image
+  let ready = false;    // загружены ли UI-картинки
+
+  // ---------- Кнопки (хит-зоны) ----------
+  // Координаты сняты с макетов художника (480×854)
+  const BUTTONS = {
+    // Титул (title_screen.png): "НАЧАТЬ МИССИЮ" — крупная оранжевая
+    menu: [
+      { id: 'start',    x: 100, y: 468, w: 280, h: 62 },  // НАЧАТЬ МИССИЮ
+      { id: 'settings', x: 355, y: 68,  w: 110, h: 34 },  // НАСТРОЙКИ (верх справа)
+    ],
+    // Пауза (pause_screen.png): 5 кнопок в панели
+    paused: [
+      { id: 'resume',   x: 120, y: 265, w: 240, h: 52 },  // ПРОДОЛЖИТЬ
+      { id: 'settings', x: 120, y: 335, w: 240, h: 52 },  // НАСТРОЙКИ
+      { id: 'resume2',  x: 120, y: 405, w: 240, h: 52 },  // КАК ИГРАТЬ (пока = resume)
+      { id: 'resume3',  x: 120, y: 475, w: 240, h: 52 },  // РЕКОРДЫ (пока = resume)
+      { id: 'to_menu',  x: 120, y: 545, w: 240, h: 52 },  // ВЫЙТИ В ГЛАВНОЕ МЕНЮ
+      { id: 'resume',   x: 428, y: 190, w: 36,  h: 36 },  // X (закрыть)
+    ],
+    // Настройки (settings_screen.png): пока только "назад"
+    settings: [
+      { id: 'back', x: 0, y: 0, w: 480, h: 854 },  // клик в любом месте = назад
+    ],
+    // Game Over (game_over_screen.png): 3 кнопки
+    game_over: [
+      { id: 'retry',    x: 90, y: 560, w: 300, h: 46 },  // ПОПРОБОВАТЬ СНОВА
+      { id: 'to_menu',  x: 90, y: 618, w: 300, h: 46 },  // ВЕРНУТЬСЯ В ГЛАВНОЕ МЕНЮ
+      { id: 'watch_ad', x: 90, y: 676, w: 300, h: 52 },  // СМОТРЕТЬ ВИДЕО +1 жизнь
+    ],
+  };
+
+  // ---------- Загрузка ----------
+  function init() {
+    const names = ['title_screen', 'pause_screen', 'settings_screen', 'game_over_screen', 'pause_button'];
+    let loaded = 0;
+    names.forEach(n => {
+      const img = new Image();
+      img.onload = () => { loaded++; if (loaded === names.length) ready = true; };
+      img.onerror = () => { loaded++; console.warn('[UI] не загружен:', n); };
+      img.src = 'assets/ui_designs/' + n + '.png';
+      screens[n] = img;
+    });
+  }
+
+  // ---------- Состояния ----------
+  function setState(s) {
+    if (s === state) return;
+    console.log('[UI]', state, '→', s);
+    state = s;
+  }
+  function getState() { return state; }
+  function isPlaying() { return state === STATE.PLAYING; }
+
+  // ---------- Отрисовка ----------
+  function draw(ctx) {
+    switch (state) {
+      case STATE.MENU:
+        _full(ctx, 'title_screen'); break;
+      case STATE.PAUSED:
+        _overlay(ctx); _full(ctx, 'pause_screen'); break;
+      case STATE.SETTINGS:
+        _overlay(ctx); _full(ctx, 'settings_screen'); break;
+      case STATE.GAME_OVER:
+        _overlay(ctx); _full(ctx, 'game_over_screen'); break;
+      case STATE.PLAYING:
+        _pauseBtn(ctx); break;
+    }
+  }
+
+  function _full(ctx, name) {
+    const img = screens[name];
+    if (img && img.complete && img.naturalWidth) ctx.drawImage(img, 0, 0, CONFIG.CANVAS_W, CONFIG.CANVAS_H);
+  }
+  function _overlay(ctx) {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 0, CONFIG.CANVAS_W, CONFIG.CANVAS_H);
+  }
+  function _pauseBtn(ctx) {
+    const img = screens.pause_button;
+    if (img && img.complete && img.naturalWidth) ctx.drawImage(img, 15, 15, 40, 40);
+  }
+
+  // ---------- Клики ----------
+  // Возвращает true, если клик обработан UI (игре его не передавать)
+  function handleClick(x, y) {
+    if (state === STATE.PLAYING) {
+      // кнопка паузы 15..55
+      if (x >= 10 && x <= 60 && y >= 10 && y <= 60) {
+        setState(STATE.PAUSED);
+        Game.pause();
+        return true;
+      }
+      return false; // остальные клики — игре
+    }
+
+    const list = BUTTONS[state] || [];
+    for (const b of list) {
+      if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+        _onButton(b.id);
+        return true;
+      }
+    }
+    return true; // на не-игровых экранах клики никуда не проходят
+  }
+
+  let _prevState = STATE.MENU; // для возврата из настроек
+
+  function _onButton(id) {
+    console.log('[UI] кнопка:', id);
+    switch (id) {
+      case 'start':
+        Game.startNewGame();
+        setState(STATE.PLAYING);
+        break;
+      case 'resume': case 'resume2': case 'resume3':
+        setState(STATE.PLAYING);
+        Game.resume();
+        break;
+      case 'settings':
+        _prevState = state;
+        setState(STATE.SETTINGS);
+        break;
+      case 'back':
+        setState(_prevState === STATE.PAUSED ? STATE.PAUSED : STATE.MENU);
+        break;
+      case 'to_menu':
+        setState(STATE.MENU);
+        Game.stopToMenu();
+        break;
+      case 'retry':
+        Game.startNewGame();
+        setState(STATE.PLAYING);
+        break;
+      case 'watch_ad':
+        // ВАРИАНТ А (заглушка): +1 жизнь сразу, без реального видео.
+        // ВАРИАНТ Б: здесь будет ysdk.adv.showRewardedVideo({callbacks:{onRewarded:...}})
+        Crew.addLife();
+        setState(STATE.PLAYING);
+        Game.resumeAfterReward();
+        break;
+    }
+  }
+
+  return { STATE, init, setState, getState, isPlaying, draw, handleClick };
+
+})();

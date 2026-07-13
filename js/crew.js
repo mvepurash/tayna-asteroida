@@ -25,7 +25,13 @@ const Crew = (() => {
   function getTotal() { return total; }
   function isGameOver() { return alive <= 0; }
 
-  return { init, onDeath, getAlive, getTotal, isGameOver };
+  // 4-я жизнь за просмотр рекламы (Яндекс требование). Не стакуется выше 1.
+  function addLife() {
+    alive = Math.max(alive, 1);
+    console.log(`[Crew] +1 жизнь за рекламу. Осталось: ${alive}/${total}`);
+  }
+
+  return { init, onDeath, getAlive, getTotal, isGameOver, addLife };
 
 })();
 

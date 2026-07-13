@@ -76,6 +76,7 @@ const Input = (() => {
     canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       const { x, y } = canvasPoint(e);
+      if (typeof UIManager !== 'undefined' && UIManager.handleClick(x, y)) return;
       if (typeof HUD === 'undefined') return;
       const dir = HUD.hitDpad(x, y);
       if (dir) { Astronaut.handleInput(dir); HUD.setDpadPressed(dir, true); }
@@ -94,6 +95,7 @@ const Input = (() => {
     canvas.addEventListener('mousedown', (e) => {
       const { x, y } = canvasPoint(e);
       console.log('[Input] canvas click:', Math.round(x), Math.round(y));
+      if (typeof UIManager !== 'undefined' && UIManager.handleClick(x, y)) return;
       if (typeof HUD === 'undefined') return;
       const dir = HUD.hitDpad(x, y);
       console.log('[Input] dpad hit:', dir);

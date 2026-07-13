@@ -18,42 +18,92 @@ const Game = (() => {
   let waitingDeath    = false;
   let invincTimer     = 0;  // неуязвимость после respawn
   let miningTimer     = 0;  // таймер автодобычи при удержании
+  let _pendingGameOver = false;  // ожидание показа экрана Game Over
 
   function init() {
     Save.getRecord();
     Renderer.init();
     Crew.init();
-    Astronaut.startSpawning();
     Tentacles.init();
     Oxygen.init();
     Crystals.init();
     Input.init();
+    UIManager.init();
 
     Astronaut.setOnDeath(_onDeath);
-    Tentacles._startFirstSlot();
 
+    // Стартуем в МЕНЮ: цикл рендерит фон игры, но геймплей не идёт
     running  = true;
     lastTime = performance.now();
     requestAnimationFrame(loop);
   }
 
+  // Полный запуск новой игры (кнопка НАЧАТЬ МИССИЮ / ПОПРОБОВАТЬ СНОВА)
+  function startNewGame() {
+    Crew.init();
+    Crystals.init();
+    Oxygen.reset();
+    Crystals.resetRun();
+    Tentacles.init();
+    sessionTime     = 0;
+    speedMultiplier = 1;
+    waitingRespawn  = false;
+    waitingDeath    = false;
+    respawnTimer    = 0;
+    deathTimer      = 0;
+    invincTimer     = 0;
+    Astronaut.startSpawning();
+    Tentacles._startFirstSlot();
+    running  = true;
+    lastTime = performance.now();
+  }
+
+  // Выход в меню (из паузы) — глушим сессию
+  function stopToMenu() {
+    waitingRespawn = false;
+    waitingDeath   = false;
+    running        = true;  // цикл продолжает рендерить меню
+    lastTime       = performance.now();
+  }
+
+  // Продолжение после рекламы (+1 жизнь): респавн без сброса кристаллов сессии
+  function resumeAfterReward() {
+    waitingRespawn = false;
+    waitingDeath   = false;
+    Astronaut.startSpawning();
+    Oxygen.reset();
+    Crystals.resetRun();
+    invincTimer = 3.0;
+    running  = true;
+    lastTime = performance.now();
+  }
+
   function loop(timestamp) {
-    if (!running) return;
+    if (!running) { requestAnimationFrame(loop); return; }
 
     const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
     lastTime = timestamp;
+
+    // В меню/паузе/настройках/game over — геймплей стоит, только рендер + UI
+    if (!UIManager.isPlaying()) {
+      try { Renderer.draw(0); } catch(e) {}
+      UIManager.draw(_ctx());
+      requestAnimationFrame(loop);
+      return;
+    }
 
     // Таймер respawn (вместо setTimeout)
     if (waitingRespawn) {
       respawnTimer -= dt;
       if (respawnTimer <= 0) {
         waitingRespawn = false;
-        if (Crew.isGameOver()) {
-          // Полный рестарт
-          Crew.init();
-          Crystals.init();
-          sessionTime = 0;
-          speedMultiplier = 1;
+        if (_pendingGameOver) {
+          _pendingGameOver = false;
+          UIManager.setState(UIManager.STATE.GAME_OVER);
+          Renderer.draw(0);
+          UIManager.draw(_ctx());
+          requestAnimationFrame(loop);
+          return;
         }
         Astronaut.startSpawning();
         Oxygen.reset();
@@ -114,7 +164,12 @@ const Game = (() => {
     } catch(e) {
       console.error('[Game] Renderer.draw error:', e.message);
     }
+    UIManager.draw(_ctx());  // кнопка паузы поверх игры
     requestAnimationFrame(loop);
+  }
+
+  function _ctx() {
+    return document.getElementById('game-canvas').getContext('2d');
   }
 
   function _checkShuttleReturn() {
@@ -137,10 +192,10 @@ const Game = (() => {
     const hasMore = Crew.onDeath();
     if (!hasMore) {
       console.log('[Game] GAME OVER — экипаж погиб');
-      // TODO: показать экран game over
-      // Пока просто останавливаем игру на 3 сек потом рестарт
+      // Даём 1.5с на анимацию смерти, затем экран Game Over
       waitingRespawn = true;
-      respawnTimer   = 3.0;
+      respawnTimer   = 1.5;
+      _pendingGameOver = true;
       return;
     }
 
@@ -175,8 +230,9 @@ const Game = (() => {
   });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) pause();
-    else resume();
+    if (document.hidden) { pause(); }
+    else if (UIManager.isPlaying()) { resume(); }
+    else { running = true; lastTime = performance.now(); requestAnimationFrame(loop); }
   });
 
   return {
@@ -186,6 +242,9 @@ const Game = (() => {
     get waitingDeath()    { return waitingDeath;    },
     pause,
     resume,
+    startNewGame,
+    stopToMenu,
+    resumeAfterReward,
   };
 
 })();
