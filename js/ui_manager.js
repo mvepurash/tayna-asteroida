@@ -123,7 +123,7 @@ const UIManager = (() => {
   }
   function _pauseBtn(ctx) {
     const img = screens.pause_button;
-    if (img && img.complete && img.naturalWidth) ctx.drawImage(img, 8, 80, 40, 40); // под панелью O₂, не перекрывает её
+    if (img && img.complete && img.naturalWidth) ctx.drawImage(img, 8, 26, 40, 40); // слева от панели O₂ (панель сдвинута вправо)
   }
 
   // ---------- Клики ----------
@@ -131,7 +131,7 @@ const UIManager = (() => {
   function handleClick(x, y) {
     if (state === STATE.PLAYING) {
       // кнопка паузы 15..55
-      if (x >= 4 && x <= 56 && y >= 76 && y <= 124) {
+      if (x >= 4 && x <= 56 && y >= 22 && y <= 70) {
         setState(STATE.PAUSED);
         Game.pause();
         return true;

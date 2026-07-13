@@ -102,7 +102,7 @@ const HUD = (() => {
     const WL = panelW * 281 / 297;                              // видимая ширина = как у экипажа (129px)
     const HL = panelH * 113 / 84;                               // видимая высота = как у экипажа (52px)
     const YL = panelY + panelH * (100.5 / 213) - HL * (97 / 213); // центр рамки = центру рамки экипажа
-    const XL = (W - (rightX + panelW * 298 / 320)) - WL * 11 / 320; // зеркальный отступ от левого края
+    const XL = (W - (rightX + panelW * 298 / 320)) - WL * 11 / 320 + 56; // +56px вправо (~2см) — слева место под кнопку паузы (запрос 13.07.2026)
 
     if (_hudImgPanelLeft.complete && _hudImgPanelLeft.naturalWidth) {
       ctx.drawImage(_hudImgPanelLeft, XL, YL, WL, HL);
@@ -170,9 +170,9 @@ const HUD = (() => {
     if (carried > 0) {
       ctx.fillStyle = CRYSTAL_COLOR;
       ctx.font      = `${Math.round(ph*0.10)}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText(`+${carried}`, tx, ty + ph * 0.12);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`+${carried}`, tx + pw * 0.085, ty); // на той же строке справа, внутри рамки
     }
   }
 
