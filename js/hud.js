@@ -93,7 +93,7 @@ const HUD = (() => {
     // Панели художника рисуем вместо плоской чёрной плашки
     const panelH = 98;
     const panelW = panelH * 1.5;
-    const panelWLeft = panelW * (122 / 123); // компенсация: выравнивание ширины рамок левой и правой панелей
+    const panelWLeft = panelW * (281 / 297); // видимая рамка panel_left (297/320px) шире рамки panel_crew (281/320px) — выравниваем видимые ширины
     const leftX  = 4;
     const rightX = W - panelW - 4;
     const panelY = (TOP_H - panelH) / 2 - 5; // ЗАФИКСИРОВАНО 21.06.2026 — НЕ МЕНЯТЬ без явного запроса
@@ -337,16 +337,16 @@ const HUD = (() => {
     const onMine = (node == 13 || node === '13');
     const mining = (st === Astronaut.STATE.MINING);
 
-    // Внешнее кольцо
+    // Индикаторное кольцо — точно на золотом кольце спрайта (band ≈44..54)
     ctx.beginPath();
-    ctx.arc(MINE_X, MINE_Y + MINE_R, MINE_R + 6, 0, Math.PI * 2);
-    ctx.strokeStyle = mining ? '#ffaa00' : (onMine ? '#cc8800' : 'rgba(150,100,0,0.3)');
-    ctx.lineWidth   = 3;
+    ctx.arc(MINE_X, MINE_Y + MINE_R, MINE_R + 1, 0, Math.PI * 2);
+    ctx.strokeStyle = mining ? 'rgba(255,190,40,0.55)' : (onMine ? 'rgba(230,160,20,0.40)' : 'rgba(150,100,0,0.15)');
+    ctx.lineWidth   = 10;
     ctx.stroke();
 
-    // Кнопка
+    // Заливка — строго внутри золотого кольца
     ctx.beginPath();
-    ctx.arc(MINE_X, MINE_Y + MINE_R, MINE_R, 0, Math.PI * 2);
+    ctx.arc(MINE_X, MINE_Y + MINE_R, MINE_R - 5, 0, Math.PI * 2);
     ctx.fillStyle = mining ? 'rgba(255,170,0,0.3)' : (onMine ? 'rgba(180,120,0,0.2)' : 'rgba(80,60,0,0.15)');
     ctx.fill();
 

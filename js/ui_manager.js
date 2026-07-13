@@ -70,8 +70,10 @@ const UIManager = (() => {
   function getState() { return state; }
   function isPlaying() { return state === STATE.PLAYING; }
 
+  let _adTimer = 0; // отсчёт заглушки рекламы
+
   // ---------- Отрисовка ----------
-  function draw(ctx) {
+  function draw(ctx, dt) {
     switch (state) {
       case STATE.MENU:
         _full(ctx, 'title_screen'); break;
@@ -81,8 +83,33 @@ const UIManager = (() => {
         _overlay(ctx); _full(ctx, 'settings_screen'); break;
       case STATE.GAME_OVER:
         _overlay(ctx); _full(ctx, 'game_over_screen'); break;
+      case STATE.REWARD_AD:
+        _drawAdStub(ctx, dt || 0); break;
       case STATE.PLAYING:
         _pauseBtn(ctx); break;
+    }
+  }
+
+  // Заглушка рекламы: чёрный экран, "РЕКЛАМА", отсчёт. По истечении — +1 жизнь.
+  function _drawAdStub(ctx, dt) {
+    _adTimer -= dt;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, CONFIG.CANVAS_W, CONFIG.CANVAS_H);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#00d4ff';
+    ctx.font = 'bold 34px sans-serif';
+    ctx.fillText('РЕКЛАМА', CONFIG.CANVAS_W / 2, 360);
+    ctx.fillStyle = '#888';
+    ctx.font = '16px sans-serif';
+    ctx.fillText('(заглушка — здесь будет видео)', CONFIG.CANVAS_W / 2, 400);
+    ctx.fillStyle = '#FFB800';
+    ctx.font = 'bold 48px sans-serif';
+    ctx.fillText(Math.max(1, Math.ceil(_adTimer)), CONFIG.CANVAS_W / 2, 470);
+    if (_adTimer <= 0) {
+      Crew.addLife();
+      setState(STATE.PLAYING);
+      Game.resumeAfterReward();
     }
   }
 
@@ -151,11 +178,10 @@ const UIManager = (() => {
         setState(STATE.PLAYING);
         break;
       case 'watch_ad':
-        // ВАРИАНТ А (заглушка): +1 жизнь сразу, без реального видео.
-        // ВАРИАНТ Б: здесь будет ysdk.adv.showRewardedVideo({callbacks:{onRewarded:...}})
-        Crew.addLife();
-        setState(STATE.PLAYING);
-        Game.resumeAfterReward();
+        // ВАРИАНТ А (заглушка): видимый экран "РЕКЛАМА" с отсчётом 3с, затем +1 жизнь.
+        // ВАРИАНТ Б: заменить на ysdk.adv.showRewardedVideo({callbacks:{onRewarded:...}})
+        _adTimer = 3.0;
+        setState(STATE.REWARD_AD);
         break;
     }
   }
