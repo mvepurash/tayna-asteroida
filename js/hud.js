@@ -93,21 +93,27 @@ const HUD = (() => {
     // Панели художника рисуем вместо плоской чёрной плашки
     const panelH = 98;
     const panelW = panelH * 1.5;
-    const panelWLeft = panelW * (281 / 297); // видимая рамка panel_left (297/320px) шире рамки panel_crew (281/320px) — выравниваем видимые ширины
-    const leftX  = 4;
     const rightX = W - panelW - 4;
     const panelY = (TOP_H - panelH) / 2 - 5; // ЗАФИКСИРОВАНО 21.06.2026 — НЕ МЕНЯТЬ без явного запроса
 
+    // Выравнивание ВИДИМЫХ рамок панелей (замерено по bbox контента спрайтов 320x213):
+    // panel_left: x=[11..308] (297px), y=[55..139] (84px); panel_crew: x=[17..298] (281px), y=[44..157] (113px).
+    // Контент рисуется в долях бокса, поэтому смена бокса двигает картинку и полосу O₂ синхронно.
+    const WL = panelW * 281 / 297;                              // видимая ширина = как у экипажа (129px)
+    const HL = panelH * 113 / 84;                               // видимая высота = как у экипажа (52px)
+    const YL = panelY + panelH * (100.5 / 213) - HL * (97 / 213); // центр рамки = центру рамки экипажа
+    const XL = (W - (rightX + panelW * 298 / 320)) - WL * 11 / 320; // зеркальный отступ от левого края
+
     if (_hudImgPanelLeft.complete && _hudImgPanelLeft.naturalWidth) {
-      ctx.drawImage(_hudImgPanelLeft, leftX, panelY, panelWLeft, panelH);
+      ctx.drawImage(_hudImgPanelLeft, XL, YL, WL, HL);
     }
     const crewImg = _crewPanelImg();
     if (crewImg && crewImg.complete && crewImg.naturalWidth) {
       ctx.drawImage(crewImg, rightX, panelY, panelW, panelH);
     }
 
-    _drawOxygen(ctx, leftX, panelY, panelWLeft, panelH);
-    _drawCrystals(ctx, leftX, panelY, panelWLeft, panelH);
+    _drawOxygen(ctx, XL, YL, WL, HL);
+    _drawCrystals(ctx, XL, YL, WL, HL);
     _drawCrew(ctx, rightX, panelY, panelW, panelH);
   }
 
