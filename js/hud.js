@@ -93,7 +93,7 @@ const HUD = (() => {
     // Панели художника рисуем вместо плоской чёрной плашки
     const panelH = 98;
     const panelW = panelH * 1.5;
-    const panelWLeft = panelW * (123 / 132); // компенсация: рамка спрайта panelLeft шире рамки panelCrew на исходном арте — выравнено по запросу пользователя 12.07.2026
+    const panelWLeft = panelW * (122 / 123); // компенсация: выравнивание ширины рамок левой и правой панелей
     const leftX  = 4;
     const rightX = W - panelW - 4;
     const panelY = (TOP_H - panelH) / 2 - 5; // ЗАФИКСИРОВАНО 21.06.2026 — НЕ МЕНЯТЬ без явного запроса
