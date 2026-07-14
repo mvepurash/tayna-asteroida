@@ -47,7 +47,7 @@ const NAV = {
   11:      { up: 8,         down: 13,   left: 10,   right: 12  },
   10:      { up: 7,         down: 13,   left: null, right: 11  },
   12:      { up: 9,         down: 13,   left: 11,   right: null },
-  13:      { up: 11,        down: null, left: null, right: null },
+  13:      { up: 11,        down: null, left: 10,   right: 12  }, // вариант А (13.07.2026): диагонали с 13-й на стрелки
 };
 
 // Нет диагональных переходов
