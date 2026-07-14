@@ -37,7 +37,8 @@ const HUD = (() => {
 
   // Нижняя панель
   const BOT_H    = 179;          // высота панели — НЕ МЕНЯТЬ
-  const BOT_Y      = H - BOT_H;   // верхняя граница зоны управления
+  const BOT_Y      = H - BOT_H;   // верхняя граница зоны управления — НЕ МЕНЯТЬ
+  const BOT_SY     = 51.5 / 46.5; // арт панели ужат по высоте ~11% (кольцо 51.5x46.5): тянем ВНИЗ от верхней границы, все локальные Y умножаются на BOT_SY
 
   // D-pad
   const DPAD_X   = 44;   // cx_cross=79   // центр крестовины X = 55
@@ -235,10 +236,10 @@ const HUD = (() => {
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#000000';
-    ctx.fillRect(0, BOT_Y - 2, W, BOT_H + 2); // +2px перекрытие чтобы не было щели
+    ctx.fillRect(0, BOT_Y - 2, W, BOT_H * BOT_SY + 2); // подложка на всю растянутую высоту
     // Спрайт нижней панели
     if (_hudImgBotPanel.complete && _hudImgBotPanel.naturalWidth) {
-      ctx.drawImage(_hudImgBotPanel, 0, BOT_Y, W, BOT_H);
+      ctx.drawImage(_hudImgBotPanel, 0, BOT_Y, W, BOT_H * BOT_SY); // растяжение вниз до круглого кольца
     }
 
     _drawDpad(ctx);
@@ -256,10 +257,10 @@ const HUD = (() => {
       // ОРИГИНАЛ (пользователь, тюнер): up(78,31) left(43,63) right(114,65) down(78,87)
       // СИММЕТРИЧНЫЕ (применено): up(78,31) left(43,64) right(113,64) down(78,87)
       // Центр (78,64), LEFT↔RIGHT ±35px, UP↕DOWN ±28px
-      { dir: 'up',    cx: 78,  cy: BOT_Y + 31 },
-      { dir: 'left',  cx: 43,  cy: BOT_Y + 64 },
-      { dir: 'right', cx: 113, cy: BOT_Y + 64 },
-      { dir: 'down',  cx: 78,  cy: BOT_Y + 87 },
+      { dir: 'up',    cx: 78,  cy: BOT_Y + 31 * BOT_SY },
+      { dir: 'left',  cx: 43,  cy: BOT_Y + 64 * BOT_SY },
+      { dir: 'right', cx: 113, cy: BOT_Y + 64 * BOT_SY },
+      { dir: 'down',  cx: 78,  cy: BOT_Y + 87 * BOT_SY },
     ];
 
     for (const { dir, cx, cy } of buttons) {
@@ -323,19 +324,19 @@ const HUD = (() => {
 
     ctx.fillStyle = 'rgba(150,220,255,0.75)';
     ctx.font      = 'bold 10px sans-serif';
-    ctx.fillText('РЕКОРД', cx, BOT_Y + 33);
+    ctx.fillText('РЕКОРД', cx, BOT_Y + 33 * BOT_SY);
 
     ctx.fillStyle = '#ffffff';
     ctx.font      = 'bold 20px sans-serif';
-    ctx.fillText(record, cx, BOT_Y + 52);
+    ctx.fillText(record, cx, BOT_Y + 52 * BOT_SY);
 
     ctx.fillStyle = 'rgba(150,220,255,0.75)';
     ctx.font      = 'bold 10px sans-serif';
-    ctx.fillText('ДОБЫТО ЗА РЕЙС', cx, BOT_Y + 68);
+    ctx.fillText('ДОБЫТО ЗА РЕЙС', cx, BOT_Y + 68 * BOT_SY);
 
     ctx.fillStyle = CRYSTAL_COLOR;
     ctx.font      = 'bold 16px sans-serif';
-    ctx.fillText(carried, cx, BOT_Y + 83);
+    ctx.fillText(carried, cx, BOT_Y + 83 * BOT_SY);
   }
   function _drawMineButton(ctx) {
     const node   = Astronaut.getNode();
@@ -343,19 +344,18 @@ const HUD = (() => {
     const onMine = (node == 13 || node === '13');
     const mining = (st === Astronaut.STATE.MINING);
 
-    // Золотое кольцо в спрайте ОВАЛЬНОЕ (замер по осям: rx=51.5, ry=46.5, центр x=395.5 y=61.5 —
-    // панель ужата по высоте ~11% в исходном арте). Индикатор повторяет этот овал.
-    const ECX = 395.5, ECY = BOT_Y + 61.5, ERX = 51.5, ERY = 46.5;
+    // После растяжения панели на BOT_SY овал золота (51.5x46.5) стал КРУГОМ R=51.5.
+    const ECX = 395.5, ECY = BOT_Y + 61.5 * BOT_SY, ER = 51.5;
 
     ctx.beginPath();
-    ctx.ellipse(ECX, ECY, ERX, ERY, 0, 0, Math.PI * 2);
+    ctx.arc(ECX, ECY, ER, 0, Math.PI * 2);
     ctx.strokeStyle = mining ? 'rgba(255,190,40,0.55)' : (onMine ? 'rgba(230,160,20,0.40)' : 'rgba(150,100,0,0.15)');
     ctx.lineWidth   = 9;
     ctx.stroke();
 
     // Заливка — строго внутри золотого кольца
     ctx.beginPath();
-    ctx.ellipse(ECX, ECY, ERX - 6, ERY - 6, 0, 0, Math.PI * 2);
+    ctx.arc(ECX, ECY, ER - 6, 0, Math.PI * 2);
     ctx.fillStyle = mining ? 'rgba(255,170,0,0.3)' : (onMine ? 'rgba(180,120,0,0.2)' : 'rgba(80,60,0,0.15)');
     ctx.fill();
 
@@ -370,12 +370,12 @@ const HUD = (() => {
     ctx.font         = 'bold 13px sans-serif';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText('ДОБЫЧА', MINE_X, MINE_Y + MINE_R + 3);
+    ctx.fillText('ДОБЫЧА', ECX, ECY + 6);
 
     if (onMine) {
       ctx.fillStyle = 'rgba(255,200,0,0.55)';
       ctx.font      = '10px sans-serif';
-      ctx.fillText('НАЖИМАЙТЕ', MINE_X, MINE_Y + MINE_R + 18);
+      ctx.fillText('НАЖИМАЙТЕ', ECX, ECY + 21);
     }
   }
 
@@ -390,10 +390,10 @@ const HUD = (() => {
       // ОРИГИНАЛ (пользователь, тюнер): up(78,31) left(43,63) right(114,65) down(78,87)
       // СИММЕТРИЧНЫЕ (применено): up(78,31) left(43,64) right(113,64) down(78,87)
       // Центр (78,64), LEFT↔RIGHT ±35px, UP↕DOWN ±28px
-      { dir: 'up',    cx: 78,  cy: BOT_Y + 31 },
-      { dir: 'left',  cx: 43,  cy: BOT_Y + 64 },
-      { dir: 'right', cx: 113, cy: BOT_Y + 64 },
-      { dir: 'down',  cx: 78,  cy: BOT_Y + 87 },
+      { dir: 'up',    cx: 78,  cy: BOT_Y + 31 * BOT_SY },
+      { dir: 'left',  cx: 43,  cy: BOT_Y + 64 * BOT_SY },
+      { dir: 'right', cx: 113, cy: BOT_Y + 64 * BOT_SY },
+      { dir: 'down',  cx: 78,  cy: BOT_Y + 87 * BOT_SY },
     ];
     for (const { dir, cx, cy } of buttons) {
       if (px >= cx - H && px <= cx + H && py >= cy - H && py <= cy + H) {
@@ -404,9 +404,9 @@ const HUD = (() => {
   }
 
   function hitMine(px, py) {
-    const dx = px - MINE_X;
-    const dy = py - (MINE_Y + MINE_R);
-    return Math.sqrt(dx*dx + dy*dy) <= MINE_R;
+    const dx = px - 395.5;
+    const dy = py - (BOT_Y + 61.5 * BOT_SY);
+    return Math.sqrt(dx*dx + dy*dy) <= 51.5;
   }
 
   return {
