@@ -138,18 +138,18 @@ const UIManager = (() => {
     const st = Save.getStats();
     const rec = Crystals.getRecord();
     const fmt = s => { s = Math.round(s); const m = Math.floor(s/60), ss = s%60; return m + ':' + String(ss).padStart(2,'0'); };
-    const rows = [
-      [262, String(rec)],
-      [362, st.bestTime > 0 ? fmt(st.bestTime) : '—'],
-      [477, String(st.flights)],
-      [585, String(st.totalMined)],
+    const rows = [  // центры слотов перепроверены примеркой на макете 14.07.2026
+      [266, String(rec)],
+      [366, st.bestTime > 0 ? fmt(st.bestTime) : '—'],
+      [481, String(st.flights)],
+      [589, String(st.totalMined)],
     ];
     ctx.save();
     ctx.font = 'bold 22px sans-serif';
     ctx.fillStyle = '#eaf6ff';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    for (const [y, v] of rows) ctx.fillText(v, 398, y);
+    for (const [y, v] of rows) ctx.fillText(v, 372, y); // right=372: внутри слота (правая граница слота ~380)
     ctx.restore();
   }
 
