@@ -94,7 +94,7 @@ const HUD = (() => {
     const panelH = 98;
     const panelW = panelH * 1.5;
     const rightX = W - panelW - 4;
-    const panelY = (TOP_H - panelH) / 2 - 5; // ЗАФИКСИРОВАНО 21.06.2026 — НЕ МЕНЯТЬ без явного запроса
+    const panelY = (TOP_H - panelH) / 2 - 19; // -5 базово, ещё -14px (~5мм) вверх по запросу 13.07.2026
 
     // Выравнивание ВИДИМЫХ рамок панелей (замерено по bbox контента спрайтов 320x213):
     // panel_left: x=[11..308] (297px), y=[55..139] (84px); panel_crew: x=[17..298] (281px), y=[44..157] (113px).
@@ -102,7 +102,7 @@ const HUD = (() => {
     const WL = panelW * 281 / 297;                              // видимая ширина = как у экипажа (129px)
     const HL = panelH * 113 / 84;                               // видимая высота = как у экипажа (52px)
     const YL = panelY + panelH * (100.5 / 213) - HL * (97 / 213); // центр рамки = центру рамки экипажа
-    const XL = (W - (rightX + panelW * 298 / 320)) - WL * 11 / 320 + 56; // +56px вправо (~2см) — слева место под кнопку паузы (запрос 13.07.2026)
+    const XL = (W - (rightX + panelW * 298 / 320)) - WL * 11 / 320 + 42; // +56px вправо (~2см), затем -14px (~5мм) влево к кнопке паузы (13.07.2026)
 
     if (_hudImgPanelLeft.complete && _hudImgPanelLeft.naturalWidth) {
       ctx.drawImage(_hudImgPanelLeft, XL, YL, WL, HL);
@@ -343,22 +343,25 @@ const HUD = (() => {
     const onMine = (node == 13 || node === '13');
     const mining = (st === Astronaut.STATE.MINING);
 
-    // Индикаторное кольцо — точно на золотом кольце спрайта (band ≈44..54)
+    // Золотое кольцо в спрайте ОВАЛЬНОЕ (замер по осям: rx=51.5, ry=46.5, центр x=395.5 y=61.5 —
+    // панель ужата по высоте ~11% в исходном арте). Индикатор повторяет этот овал.
+    const ECX = 395.5, ECY = BOT_Y + 61.5, ERX = 51.5, ERY = 46.5;
+
     ctx.beginPath();
-    ctx.arc(MINE_X, MINE_Y + MINE_R, MINE_R + 1, 0, Math.PI * 2);
+    ctx.ellipse(ECX, ECY, ERX, ERY, 0, 0, Math.PI * 2);
     ctx.strokeStyle = mining ? 'rgba(255,190,40,0.55)' : (onMine ? 'rgba(230,160,20,0.40)' : 'rgba(150,100,0,0.15)');
-    ctx.lineWidth   = 10;
+    ctx.lineWidth   = 9;
     ctx.stroke();
 
     // Заливка — строго внутри золотого кольца
     ctx.beginPath();
-    ctx.arc(MINE_X, MINE_Y + MINE_R, MINE_R - 5, 0, Math.PI * 2);
+    ctx.ellipse(ECX, ECY, ERX - 6, ERY - 6, 0, 0, Math.PI * 2);
     ctx.fillStyle = mining ? 'rgba(255,170,0,0.3)' : (onMine ? 'rgba(180,120,0,0.2)' : 'rgba(80,60,0,0.15)');
     ctx.fill();
 
     // Иконка кристалла — фиксированный размер, чтобы кнопка не "прыгала"
     ctx.save();
-    ctx.translate(MINE_X, MINE_Y + MINE_R - 23);
+    ctx.translate(ECX, ECY - 23);
     _drawCrystalIcon(ctx, 14);
     ctx.restore();
 

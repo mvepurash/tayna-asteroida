@@ -419,6 +419,12 @@ const Renderer = (() => {
       y += 72;
     }
 
+    // Узел 13: астронавт стоит ближе к кристаллам (+28px вниз, ~1-1.5см) — запрос 13.07.2026.
+    // Только когда стоит/добывает, чтобы не было скачка при движении.
+    if ((Astronaut.getNode() == 13) && st !== Astronaut.STATE.MOVING) {
+      y += 28;
+    }
+
     // Мигание во время неуязвимости
     const invinc = typeof Game !== 'undefined' && Game.invincTimer > 0;
     if (invinc && Math.floor(Date.now() / 150) % 2 === 0) return;
