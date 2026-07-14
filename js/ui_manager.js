@@ -11,6 +11,7 @@ const UIManager = (() => {
     PLAYING:   'playing',
     PAUSED:    'paused',
     SETTINGS:  'settings',
+    HOWTO:     'howto',      // заставка ИНСТРУКТАЖ (briefing_screen)
     GAME_OVER: 'game_over',
     REWARD_AD: 'reward_ad',  // задел под вариант Б (реальная реклама)
   };
@@ -31,7 +32,7 @@ const UIManager = (() => {
     paused: [  // макет PAUSE_SCREEN v2 от 13.07.2026 (детект по краям кнопок)
       { id: 'resume',   x: 120, y: 318, w: 240, h: 70 },  // ПРОДОЛЖИТЬ (оранжевая)
       { id: 'settings', x: 105, y: 430, w: 270, h: 52 },  // НАСТРОЙКИ
-      { id: 'resume2',  x: 105, y: 507, w: 270, h: 52 },  // КАК ИГРАТЬ (пока = resume)
+      { id: 'howto',    x: 105, y: 507, w: 270, h: 52 },  // КАК ИГРАТЬ -> заставка ИНСТРУКТАЖ
       { id: 'resume3',  x: 105, y: 584, w: 270, h: 52 },  // РЕКОРДЫ (пока = resume)
       { id: 'to_menu',  x: 105, y: 655, w: 270, h: 65 },  // ВЫЙТИ В ГЛАВНОЕ МЕНЮ
       { id: 'resume',   x: 405, y: 88,  w: 60,  h: 42 },  // X (закрыть, верх-право панели)
@@ -39,6 +40,9 @@ const UIManager = (() => {
     // Настройки (settings_screen.png): пока только "назад"
     settings: [
       { id: 'back', x: 0, y: 0, w: 480, h: 854 },  // клик в любом месте = назад
+    ],
+    howto: [
+      { id: 'back', x: 0, y: 0, w: 480, h: 854 },  // X/ПОНЯТНО/любой клик = назад в паузу
     ],
     // Game Over (game_over_screen.png): 3 кнопки
     game_over: [
@@ -50,7 +54,7 @@ const UIManager = (() => {
 
   // ---------- Загрузка ----------
   function init() {
-    const names = ['title_screen', 'pause_screen', 'settings_screen', 'game_over_screen', 'pause_button'];
+    const names = ['title_screen', 'pause_screen', 'settings_screen', 'game_over_screen', 'briefing_screen', 'pause_button'];
     let loaded = 0;
     names.forEach(n => {
       const img = new Image();
@@ -81,6 +85,8 @@ const UIManager = (() => {
         _overlay(ctx); _full(ctx, 'pause_screen'); break;
       case STATE.SETTINGS:
         _overlay(ctx); _full(ctx, 'settings_screen'); break;
+      case STATE.HOWTO:
+        _overlay(ctx); _full(ctx, 'briefing_screen'); break;
       case STATE.GAME_OVER:
         _overlay(ctx); _full(ctx, 'game_over_screen'); break;
       case STATE.REWARD_AD:
@@ -166,9 +172,13 @@ const UIManager = (() => {
         _prevState = state;
         setState(STATE.SETTINGS);
         break;
+      case 'howto':
+        _prevState = state;
+        setState(STATE.HOWTO);
+        break;
       case 'back':
         setState(_prevState === STATE.PAUSED ? STATE.PAUSED : STATE.MENU);
-        break;
+        break;  // из settings/howto — туда, откуда пришли
       case 'to_menu':
         setState(STATE.MENU);
         Game.stopToMenu();
