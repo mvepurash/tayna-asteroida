@@ -159,21 +159,24 @@ const HUD = (() => {
     const carried = Crystals.getCarried();
 
     // ЗАФИКСИРОВАНО 21.06.2026 — НЕ МЕНЯТЬ без явного запроса
-    const tx = px + pw * 0.3234;
+    // 14.07.2026: число выравнено ВЛЕВО (растёт только вправо, не налезает на иконку),
+    // '+N' позиционируется через measureText — всегда 6px после последней цифры.
+    const tx = px + pw * 0.3234 - pw * 0.02; // левая точка числа (сдвиг на полширины 1 цифры от старого центра)
     const ty = py + ph * 0.5540;
 
     ctx.fillStyle    = '#ffffff';
     ctx.font         = `bold ${Math.round(ph*0.13)}px sans-serif`;
-    ctx.textAlign    = 'center';
+    ctx.textAlign    = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(total, tx, ty);
 
     if (carried > 0) {
+      const totalW = ctx.measureText(String(total)).width;
       ctx.fillStyle = CRYSTAL_COLOR;
       ctx.font      = `${Math.round(ph*0.10)}px sans-serif`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`+${carried}`, tx + pw * 0.085, ty); // на той же строке справа, внутри рамки
+      ctx.fillText(`+${carried}`, tx + totalW + 6, ty); // синий уезжает вправо вместе с ростом числа
     }
   }
 
