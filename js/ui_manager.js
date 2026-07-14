@@ -12,6 +12,7 @@ const UIManager = (() => {
     PAUSED:    'paused',
     SETTINGS:  'settings',
     HOWTO:     'howto',      // заставка ИНСТРУКТАЖ (briefing_screen)
+    RECORDS:   'records',    // заставка РЕКОРДЫ (records_screen)
     GAME_OVER: 'game_over',
     REWARD_AD: 'reward_ad',  // задел под вариант Б (реальная реклама)
   };
@@ -33,7 +34,7 @@ const UIManager = (() => {
       { id: 'resume',   x: 120, y: 318, w: 240, h: 70 },  // ПРОДОЛЖИТЬ (оранжевая)
       { id: 'settings', x: 105, y: 430, w: 270, h: 52 },  // НАСТРОЙКИ
       { id: 'howto',    x: 105, y: 507, w: 270, h: 52 },  // КАК ИГРАТЬ -> заставка ИНСТРУКТАЖ
-      { id: 'resume3',  x: 105, y: 584, w: 270, h: 52 },  // РЕКОРДЫ (пока = resume)
+      { id: 'records',  x: 105, y: 584, w: 270, h: 52 },  // РЕКОРДЫ -> заставка
       { id: 'to_menu',  x: 105, y: 655, w: 270, h: 65 },  // ВЫЙТИ В ГЛАВНОЕ МЕНЮ
       { id: 'resume',   x: 405, y: 88,  w: 60,  h: 42 },  // X (закрыть, верх-право панели)
     ],
@@ -43,6 +44,9 @@ const UIManager = (() => {
     ],
     howto: [
       { id: 'back', x: 0, y: 0, w: 480, h: 854 },  // X/ПОНЯТНО/любой клик = назад в паузу
+    ],
+    records: [
+      { id: 'back', x: 0, y: 0, w: 480, h: 854 },  // X/НАЗАД/любой клик = назад в паузу
     ],
     // Game Over (game_over_screen.png): 3 кнопки
     game_over: [
@@ -54,7 +58,7 @@ const UIManager = (() => {
 
   // ---------- Загрузка ----------
   function init() {
-    const names = ['title_screen', 'pause_screen', 'settings_screen', 'game_over_screen', 'briefing_screen', 'pause_button'];
+    const names = ['title_screen', 'pause_screen', 'settings_screen', 'game_over_screen', 'briefing_screen', 'records_screen', 'pause_button'];
     let loaded = 0;
     names.forEach(n => {
       const img = new Image();
@@ -87,6 +91,8 @@ const UIManager = (() => {
         _overlay(ctx); _full(ctx, 'settings_screen'); break;
       case STATE.HOWTO:
         _overlay(ctx); _full(ctx, 'briefing_screen'); break;
+      case STATE.RECORDS:
+        _overlay(ctx); _full(ctx, 'records_screen'); _drawRecordsValues(ctx); break;
       case STATE.GAME_OVER:
         _overlay(ctx); _full(ctx, 'game_over_screen'); break;
       case STATE.REWARD_AD:
@@ -127,6 +133,26 @@ const UIManager = (() => {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, CONFIG.CANVAS_W, CONFIG.CANVAS_H);
   }
+  // Цифры на экране РЕКОРДЫ — в пустые поля макета (центры плашек замерены по подписям)
+  function _drawRecordsValues(ctx) {
+    const st = Save.getStats();
+    const rec = Crystals.getRecord();
+    const fmt = s => { s = Math.round(s); const m = Math.floor(s/60), ss = s%60; return m + ':' + String(ss).padStart(2,'0'); };
+    const rows = [
+      [262, String(rec)],
+      [362, st.bestTime > 0 ? fmt(st.bestTime) : '—'],
+      [477, String(st.flights)],
+      [585, String(st.totalMined)],
+    ];
+    ctx.save();
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillStyle = '#eaf6ff';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (const [y, v] of rows) ctx.fillText(v, 398, y);
+    ctx.restore();
+  }
+
   function _pauseBtn(ctx) {
     const img = screens.pause_button;
     if (img && img.complete && img.naturalWidth) ctx.drawImage(img, 8, 12, 40, 40); // слева от панели O₂, поднята на 14px (~5мм)
@@ -175,6 +201,10 @@ const UIManager = (() => {
       case 'howto':
         _prevState = state;
         setState(STATE.HOWTO);
+        break;
+      case 'records':
+        _prevState = state;
+        setState(STATE.RECORDS);
         break;
       case 'back':
         setState(_prevState === STATE.PAUSED ? STATE.PAUSED : STATE.MENU);

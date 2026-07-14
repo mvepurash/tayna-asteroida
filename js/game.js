@@ -19,6 +19,7 @@ const Game = (() => {
   let invincTimer     = 0;  // неуязвимость после respawn
   let miningTimer     = 0;  // таймер автодобычи при удержании
   let _pendingGameOver = false;  // ожидание показа экрана Game Over
+  let _runStart        = 0;      // sessionTime старта текущего рейса (для лучшего времени)
 
   function init() {
     Save.getRecord();
@@ -52,6 +53,7 @@ const Game = (() => {
     respawnTimer    = 0;
     deathTimer      = 0;
     invincTimer     = 0;
+    _runStart = 0;
     Astronaut.startSpawning();
     Tentacles._startFirstSlot();
     running  = true;
@@ -105,6 +107,7 @@ const Game = (() => {
           requestAnimationFrame(loop);
           return;
         }
+        _runStart = sessionTime;
         Astronaut.startSpawning();
         Oxygen.reset();
         Crystals.resetRun();
@@ -181,6 +184,8 @@ const Game = (() => {
     const delivered = Crystals.deliver();
     if (delivered > 0) {
       console.log(`[Game] Доставлено ${delivered} кристаллов`);
+      Save.updateStats(delivered, sessionTime - _runStart);
+      _runStart = sessionTime;
     }
     Oxygen.refill();
   }
