@@ -438,7 +438,9 @@ const Renderer = (() => {
     const hasSprite = _img &&
                       (_img._ready || (_img.complete && _img.naturalWidth > 0));
 
-    if (hasSprite) {
+    if (st === Astronaut.STATE.SPAWNING && ANIMS.spawn.frames.length >= 5) {
+      _drawSpawnCartoon(x, y);
+    } else if (hasSprite) {
       _drawSprite(x, y);
     } else if (st === Astronaut.STATE.SPAWNING) {
       // Fallback для spawn: рисуем idle спрайт если spawn ещё не загрузился
@@ -462,6 +464,70 @@ const Renderer = (() => {
   }
 
   let _glowT = 0; // таймер послесвечения бура (сек)
+
+  // Мультяшный спавн (14.07.2026): луч + материализация в воротах,
+  // непрозрачный полёт с двигателями, приземление с отскоком и пылью.
+  function _drawSpawnCartoon(x, y) {
+    const p = Astronaut.getSpawnProgress();
+    const shuttleRaw = (typeof getPos === 'function' ? null : null);
+    const gate = { x: 240, y: 165 };
+    const plat = { x: 240, y: 246 };
+
+    // Телепорт-луч из ворот к платформе, гаснет к концу полёта
+    if (p < 0.72) {
+      const beamA = p < 0.3 ? 1 : Math.max(0, 1 - (p - 0.3) / 0.42);
+      const pulse = 0.75 + 0.25 * Math.sin(performance.now() / 90);
+      const grad = ctx.createLinearGradient(gate.x, gate.y - 10, gate.x, plat.y + 12);
+      grad.addColorStop(0, `rgba(120,230,255,${0.55 * beamA * pulse})`);
+      grad.addColorStop(1, `rgba(40,150,255,${0.10 * beamA})`);
+      ctx.save();
+      ctx.fillStyle = grad;
+      const bw = 30 * pulse;
+      ctx.fillRect(gate.x - bw / 2, gate.y - 10, bw, plat.y - gate.y + 22);
+      ctx.restore();
+    }
+
+    // Выбор кадра и мультяшные эффекты по фазам
+    const F = ANIMS.spawn.frames;
+    const savedKey = anim.key, savedFrame = anim.frame;
+    let sx = 1, sy = 1;
+    if (p < 0.3) {
+      anim.key = 'spawn';
+      anim.frame = p < 0.16 ? 0 : 1;              // кадры 01-02 в воротах (телепорт)
+    } else if (p < 0.7) {
+      anim.key = 'idle'; anim.frame = 0;          // полёт: НЕПРОЗРАЧНЫЙ idle + двигатели
+      const flame = 0.6 + 0.4 * Math.sin(performance.now() / 60);
+      ctx.save();
+      ctx.globalAlpha = 0.75;
+      ctx.fillStyle = '#2af4ff';
+      ctx.beginPath(); ctx.ellipse(x - 9, y - 4, 5, 6 + 5 * flame, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x + 9, y - 4, 5, 6 + 5 * flame, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    } else {
+      anim.key = 'spawn';
+      const sub = (p - 0.7) / 0.3;
+      anim.frame = sub < 0.34 ? 2 : (sub < 0.67 ? 3 : 4); // пыль -> стойка -> готов
+      // squash&stretch: шлёп 0.82 по Y с перелётом 1.06 и возвратом
+      const bt = Math.min(1, sub / 0.5);
+      sy = bt < 0.4 ? 1 - 0.18 * (bt / 0.4) : 0.82 + 0.24 * ((bt - 0.4) / 0.6);
+      if (sub > 0.55) sy = 1.06 - 0.06 * ((sub - 0.55) / 0.45);
+      sx = 2 - sy; sx = 1 + (sx - 1) * 0.5;
+      // кольцо пыли у ног в первый момент касания
+      if (sub < 0.3) {
+        const da = 1 - sub / 0.3;
+        ctx.save();
+        ctx.strokeStyle = `rgba(200,190,170,${0.5 * da})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.ellipse(x, y + 2, 14 + 26 * (sub / 0.3), 5 + 7 * (sub / 0.3), 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
+    }
+    ctx.save();
+    ctx.translate(x, y); ctx.scale(sx, sy); ctx.translate(-x, -y);
+    _drawSprite(x, y);
+    ctx.restore();
+    anim.key = savedKey; anim.frame = savedFrame;
+  }
 
   // Пульсирующее свечение на кончике бура при добыче (14.07.2026)
   function _drawDrillGlow(x, y, mirror) {

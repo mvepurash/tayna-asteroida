@@ -111,6 +111,8 @@ const Astronaut = (() => {
     renderY = shuttle.y + 81; // ворота шаттла ≈ на 81px ниже верхушки
   }
 
+  function getSpawnProgress() { return state === STATE.SPAWNING ? 1 - (spawnTimer / SPAWN_DURATION) : 1; }
+
   function isSpawning() {
     return state === STATE.SPAWNING;
   }
@@ -222,10 +224,18 @@ const Astronaut = (() => {
       const shuttle  = { x: shuttleRaw.x, y: shuttleRaw.y + 81 }; // ворота
       const platform = getPos('1')       || { x: 240, y: 246 };
       const progress = 1 - (spawnTimer / SPAWN_DURATION);  // 0→1
-      // ease-out квадратичный: быстрый старт, торможение у платформы
-      const eased = 1 - Math.pow(1 - progress, 2);
-      renderX = shuttle.x + (platform.x - shuttle.x) * eased;
-      renderY = shuttle.y + (platform.y - shuttle.y) * eased;
+      // Мультяшная схема (14.07.2026): 0..0.3 — материализация в воротах;
+      // 0.3..0.7 — полёт вниз (ease-in-out); 0.7..1 — приземление на платформе.
+      if (progress < 0.3) {
+        renderX = shuttle.x; renderY = shuttle.y;
+      } else if (progress < 0.7) {
+        let t = (progress - 0.3) / 0.4;
+        t = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2; // easeInOutQuad
+        renderX = shuttle.x + (platform.x - shuttle.x) * t;
+        renderY = shuttle.y + (platform.y - shuttle.y) * t;
+      } else {
+        renderX = platform.x; renderY = platform.y;
+      }
       return;
     }
 
@@ -405,6 +415,7 @@ const Astronaut = (() => {
     stopMine,
     kill,
     freeze,
+    getSpawnProgress,
     setOnDeath,
     getState,
     getNode,
