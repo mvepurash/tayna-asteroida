@@ -79,6 +79,7 @@ const UIManager = (() => {
   function isPlaying() { return state === STATE.PLAYING; }
 
   let _adTimer = 0; // отсчёт заглушки рекламы
+  let _flash = null; // эффект нажатия кнопки: {x,y,w,h,t}
 
   // ---------- Отрисовка ----------
   function draw(ctx, dt) {
@@ -100,6 +101,24 @@ const UIManager = (() => {
       case STATE.PLAYING:
         _pauseBtn(ctx); break;
     }
+    _drawFlash(ctx, dt || 0);
+  }
+
+  // Эффект нажатия: затемнение + неоновая обводка зоны кнопки на ~140мс
+  function _drawFlash(ctx, dt) {
+    if (!_flash) return;
+    _flash.t -= dt;
+    if (_flash.t <= 0) { _flash = null; return; }
+    const a = Math.min(1, _flash.t / 0.14);
+    ctx.save();
+    ctx.fillStyle = `rgba(0,0,0,${0.25 * a})`;
+    ctx.fillRect(_flash.x, _flash.y, _flash.w, _flash.h);
+    ctx.strokeStyle = `rgba(0,212,255,${0.9 * a})`;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = 'rgba(0,212,255,0.9)';
+    ctx.shadowBlur = 12 * a;
+    ctx.strokeRect(_flash.x + 1.5, _flash.y + 1.5, _flash.w - 3, _flash.h - 3);
+    ctx.restore();
   }
 
   // Заглушка рекламы: чёрный экран, "РЕКЛАМА", отсчёт. По истечении — +1 жизнь.
@@ -164,6 +183,7 @@ const UIManager = (() => {
     if (state === STATE.PLAYING) {
       // кнопка паузы 15..55
       if (x >= 4 && x <= 56 && y >= 8 && y <= 56) {
+        _flash = { x: 8, y: 12, w: 40, h: 40, t: 0.14 };
         setState(STATE.PAUSED);
         Game.pause();
         return true;
@@ -174,6 +194,7 @@ const UIManager = (() => {
     const list = BUTTONS[state] || [];
     for (const b of list) {
       if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+        if (b.w < 480) _flash = { x: b.x, y: b.y, w: b.w, h: b.h, t: 0.14 }; // полноэкранные back-зоны не подсвечиваем
         _onButton(b.id);
         return true;
       }
