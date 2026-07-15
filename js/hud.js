@@ -68,9 +68,12 @@ const HUD = (() => {
   const _hudImgBotPanel  = new Image(); _hudImgBotPanel.src  = HUD_SPRITES.botPanel;
   // ---------- Состояние D-pad (подсветка при нажатии) ----------
   const dpadPressed = { up: false, down: false, left: false, right: false };
+  const dpadPressT  = { up: 0, down: 0, left: 0, right: 0 }; // время нажатия — эффект держится мин. 180мс
 
   function setDpadPressed(dir, val) {
-    if (dir in dpadPressed) dpadPressed[dir] = val;
+    if (!(dir in dpadPressed)) return;
+    dpadPressed[dir] = val;
+    if (val) dpadPressT[dir] = performance.now();
   }
 
   // ---------- Анимация мигания O2 при критическом уровне ----------
@@ -267,7 +270,7 @@ const HUD = (() => {
     ];
 
     for (const { dir, cx, cy } of buttons) {
-      const pressed = !!dpadPressed[dir];
+      const pressed = !!dpadPressed[dir] || (performance.now() - dpadPressT[dir] < 180);
       const img = _btnImgs[dir];
       if (img && (img._ready || (img.complete && img.naturalWidth > 0))) {
         if (pressed) {

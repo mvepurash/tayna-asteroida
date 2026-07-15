@@ -109,15 +109,19 @@ const UIManager = (() => {
     if (!_flash) return;
     _flash.t -= dt;
     if (_flash.t <= 0) { _flash = null; return; }
-    const a = Math.min(1, _flash.t / 0.14);
+    const a = Math.min(1, _flash.t / 0.18);
     ctx.save();
     ctx.fillStyle = `rgba(0,0,0,${0.25 * a})`;
     ctx.fillRect(_flash.x, _flash.y, _flash.w, _flash.h);
     ctx.strokeStyle = `rgba(0,212,255,${0.9 * a})`;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
     ctx.shadowColor = 'rgba(0,212,255,0.9)';
-    ctx.shadowBlur = 12 * a;
-    ctx.strokeRect(_flash.x + 1.5, _flash.y + 1.5, _flash.w - 3, _flash.h - 3);
+    ctx.shadowBlur = 18 * a;
+    ctx.strokeRect(_flash.x + 2, _flash.y + 2, _flash.w - 4, _flash.h - 4);
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = `rgba(255,255,255,${0.7 * a})`;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(_flash.x + 5, _flash.y + 5, _flash.w - 10, _flash.h - 10);
     ctx.restore();
   }
 
@@ -183,7 +187,7 @@ const UIManager = (() => {
     if (state === STATE.PLAYING) {
       // кнопка паузы 15..55
       if (x >= 4 && x <= 56 && y >= 8 && y <= 56) {
-        _flash = { x: 8, y: 12, w: 40, h: 40, t: 0.14 };
+        _flash = { x: 8, y: 12, w: 40, h: 40, t: 0.25 };
         setState(STATE.PAUSED);
         Game.pause();
         return true;
@@ -194,7 +198,7 @@ const UIManager = (() => {
     const list = BUTTONS[state] || [];
     for (const b of list) {
       if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
-        if (b.w < 480) _flash = { x: b.x, y: b.y, w: b.w, h: b.h, t: 0.14 }; // полноэкранные back-зоны не подсвечиваем
+        if (b.w < 480) _flash = { x: b.x, y: b.y, w: b.w, h: b.h, t: 0.25 }; // полноэкранные back-зоны не подсвечиваем
         _onButton(b.id);
         return true;
       }
