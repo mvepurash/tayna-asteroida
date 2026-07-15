@@ -230,6 +230,7 @@ const Renderer = (() => {
     _drawTentacles();
     _drawCrystalDeposit();
     _updateAnim(dt || 0);
+    if (_glowT > 0) _glowT = Math.max(0, _glowT - (dt || 0));
     _drawAstronaut();
     if (typeof HUD !== 'undefined') HUD.draw(ctx, dt);
     if (CONFIG.DEBUG) _drawDebug();
@@ -419,7 +420,8 @@ const Renderer = (() => {
       y += 72;
     }
 
-    if (st === Astronaut.STATE.MINING) _drawDrillGlow(x, y, anim.mirror);
+    if (st === Astronaut.STATE.MINING) _glowT = 0.45;      // при удержании горит постоянно
+    if (_glowT > 0) _drawDrillGlow(x, y, anim.mirror);      // послесвечение после тапа
 
     // Узел 13: астронавт стоит ближе к кристаллам (+28px вниз, ~1-1.5см) — запрос 13.07.2026.
     // Только когда стоит/добывает, чтобы не было скачка при движении.
@@ -459,10 +461,13 @@ const Renderer = (() => {
     }
   }
 
+  let _glowT = 0; // таймер послесвечения бура (сек)
+
   // Пульсирующее свечение на кончике бура при добыче (14.07.2026)
   function _drawDrillGlow(x, y, mirror) {
     const t = performance.now() / 1000;
-    const p = 0.55 + 0.45 * Math.sin(t * 9);          // пульс ~1.4 Гц
+    const fade = Math.min(1, _glowT / 0.20);           // плавное затухание послесвечения
+    const p = (0.55 + 0.45 * Math.sin(t * 9)) * fade;  // пульс ~1.4 Гц
     const dx = mirror ? 24 : -24, dy = -33;            // кончик бура на спрайтах mine_01..04
     const gx = x + dx, gy = y + dy;
     ctx.save();
