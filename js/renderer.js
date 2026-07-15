@@ -419,6 +419,8 @@ const Renderer = (() => {
       y += 72;
     }
 
+    if (st === Astronaut.STATE.MINING) _drawDrillGlow(x, y, anim.mirror);
+
     // Узел 13: астронавт стоит ближе к кристаллам (+28px вниз, ~1-1.5см) — запрос 13.07.2026.
     // Только когда стоит/добывает, чтобы не было скачка при движении.
     if ((Astronaut.getNode() == 13) && st !== Astronaut.STATE.MOVING) {
@@ -455,6 +457,25 @@ const Renderer = (() => {
     if (Astronaut.getIsDiagonal() && !Astronaut.getDiagChosen()) {
       _drawDiagHint(x, y);
     }
+  }
+
+  // Пульсирующее свечение на кончике бура при добыче (14.07.2026)
+  function _drawDrillGlow(x, y, mirror) {
+    const t = performance.now() / 1000;
+    const p = 0.55 + 0.45 * Math.sin(t * 9);          // пульс ~1.4 Гц
+    const dx = mirror ? 24 : -24, dy = -33;            // кончик бура на спрайтах mine_01..04
+    const gx = x + dx, gy = y + dy;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, 16);
+    g.addColorStop(0,   `rgba(180,240,255,${0.85 * p})`);
+    g.addColorStop(0.4, `rgba(60,190,255,${0.50 * p})`);
+    g.addColorStop(1,   'rgba(0,120,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(gx, gy, 16, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(255,255,255,${0.9 * p})`;    // белое ядро-искра
+    ctx.beginPath(); ctx.arc(gx, gy, 2.5 + 1.5 * p, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
   }
 
   function _drawSprite(x, y) {
