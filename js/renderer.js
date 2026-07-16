@@ -464,6 +464,7 @@ const Renderer = (() => {
   }
 
   let _glowT = 0; // таймер послесвечения бура (сек)
+  let _spawnDbg = -1; // фактически отрисованный кадр спавна (для проверки)
 
   // Мультяшный спавн (14.07.2026): луч + материализация в воротах,
   // непрозрачный полёт с двигателями, приземление с отскоком и пылью.
@@ -491,22 +492,17 @@ const Renderer = (() => {
     const F = ANIMS.spawn.frames;
     const savedKey = anim.key, savedFrame = anim.frame;
     let sx = 1, sy = 1;
-    if (p < 0.3) {
-      anim.key = 'spawn';
-      anim.frame = p < 0.16 ? 0 : 1;              // кадры 01-02 в воротах (телепорт)
-    } else if (p < 0.7) {
-      anim.key = 'idle'; anim.frame = 0;          // полёт: НЕПРОЗРАЧНЫЙ idle + двигатели
-      const flame = 0.6 + 0.4 * Math.sin(performance.now() / 60);
-      ctx.save();
-      ctx.globalAlpha = 0.75;
-      ctx.fillStyle = '#2af4ff';
-      ctx.beginPath(); ctx.ellipse(x - 9, y - 4, 5, 6 + 5 * flame, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(x + 9, y - 4, 5, 6 + 5 * flame, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
+    // Последовательность кадров ВОССТАНОВЛЕНА 15.07.2026: строго 01->02->03->04->05
+    anim.key = 'spawn';
+    if (p < 0.16) {
+      anim.frame = 0;                              // 01: материализация в воротах
+    } else if (p < 0.30) {
+      anim.frame = 1;                              // 02: телепорт-луч, старт спуска (в воротах)
+    } else if (p < 0.70) {
+      anim.frame = 2;                              // 03: полёт вниз (выхлоп зашит в кадре)
     } else {
-      anim.key = 'spawn';
       const sub = (p - 0.7) / 0.3;
-      anim.frame = sub < 0.34 ? 2 : (sub < 0.67 ? 3 : 4); // пыль -> стойка -> готов
+      anim.frame = sub < 0.5 ? 3 : 4;              // 04: касание -> 05: стойка
       // squash&stretch: шлёп 0.82 по Y с перелётом 1.06 и возвратом
       const bt = Math.min(1, sub / 0.5);
       sy = bt < 0.4 ? 1 - 0.18 * (bt / 0.4) : 0.82 + 0.24 * ((bt - 0.4) / 0.6);
@@ -522,6 +518,7 @@ const Renderer = (() => {
         ctx.restore();
       }
     }
+    _spawnDbg = anim.frame;
     ctx.save();
     ctx.translate(x, y); ctx.scale(sx, sy); ctx.translate(-x, -y);
     _drawSprite(x, y);
@@ -670,7 +667,7 @@ const Renderer = (() => {
     ctx.stroke();
   }
 
-  return { init, draw };
+  return { init, draw, _dbgFrame: () => ({ key: anim.key, frame: anim.frame, spawnDrawn: _spawnDbg }) };
 })();
 
 
