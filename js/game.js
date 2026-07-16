@@ -54,6 +54,7 @@ const Game = (() => {
     deathTimer      = 0;
     invincTimer     = 0;
     _runStart = 0;
+    AudioFX.play('spawn');
     Astronaut.startSpawning();
     Tentacles._startFirstSlot();
     running  = true;
@@ -108,6 +109,7 @@ const Game = (() => {
           return;
         }
         _runStart = sessionTime;
+        AudioFX.play('spawn');
         Astronaut.startSpawning();
         Oxygen.reset();
         Crystals.resetRun();
@@ -184,6 +186,7 @@ const Game = (() => {
     const delivered = Crystals.deliver();
     if (delivered > 0) {
       console.log(`[Game] Доставлено ${delivered} кристаллов`);
+      AudioFX.play('deliver');
       Save.updateStats(delivered, sessionTime - _runStart);
       _runStart = sessionTime;
     }
@@ -191,6 +194,7 @@ const Game = (() => {
   }
 
   function _onDeath() {
+    AudioFX.play('death'); AudioFX.vibrate(150);
     console.log('[Game] Астронавт погиб');
     Crystals.loseCarried();
 
@@ -210,11 +214,13 @@ const Game = (() => {
   }
 
   function pause() {
+    AudioFX.pause();
     running = false;
     Oxygen.pause();
   }
 
   function resume() {
+    AudioFX.resume();
     running  = true;
     lastTime = performance.now();
     Oxygen.resume();

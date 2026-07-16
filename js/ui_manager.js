@@ -40,7 +40,8 @@ const UIManager = (() => {
     ],
     // Настройки (settings_screen.png): пока только "назад"
     settings: [
-      { id: 'back', x: 0, y: 0, w: 480, h: 854 },  // клик в любом месте = назад
+      { id: 'vibro', x: 110, y: 620, w: 260, h: 48 }, // тумблер вибрации (рисуется кодом)
+      { id: 'back',  x: 0,   y: 0,   w: 480, h: 854 },
     ],
     howto: [
       { id: 'back', x: 0, y: 0, w: 480, h: 854 },  // X/ПОНЯТНО/любой клик = назад в паузу
@@ -89,7 +90,7 @@ const UIManager = (() => {
       case STATE.PAUSED:
         _overlay(ctx); _full(ctx, 'pause_screen'); break;
       case STATE.SETTINGS:
-        _overlay(ctx); _full(ctx, 'settings_screen'); break;
+        _overlay(ctx); _full(ctx, 'settings_screen'); _drawSettingsExtras(ctx); break;
       case STATE.HOWTO:
         _overlay(ctx); _full(ctx, 'briefing_screen'); break;
       case STATE.RECORDS:
@@ -142,6 +143,7 @@ const UIManager = (() => {
     ctx.font = 'bold 48px sans-serif';
     ctx.fillText(Math.max(1, Math.ceil(_adTimer)), CONFIG.CANVAS_W / 2, 470);
     if (_adTimer <= 0) {
+      AudioFX.play('reward');
       Crew.addLife();
       setState(STATE.PLAYING);
       Game.resumeAfterReward();
@@ -176,6 +178,32 @@ const UIManager = (() => {
     ctx.restore();
   }
 
+  // Кодовый тумблер вибрации на экране настроек (16.07.2026)
+  function _drawSettingsExtras(ctx) {
+    const on = AudioFX.getVibro();
+    const x = 110, y = 620, w = 260, h = 48;
+    ctx.save();
+    ctx.fillStyle = 'rgba(10,25,40,0.85)';
+    ctx.strokeStyle = 'rgba(0,212,255,0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#eaf6ff';
+    ctx.font = 'bold 17px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('ВИБРАЦИЯ', x + 16, y + h/2);
+    // пилюля-переключатель
+    const pw = 64, ph = 28, px = x + w - pw - 14, py = y + (h - ph)/2;
+    ctx.fillStyle = on ? 'rgba(0,214,98,0.85)' : 'rgba(120,120,120,0.6)';
+    ctx.beginPath(); ctx.roundRect(px, py, pw, ph, ph/2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(on ? px + pw - ph/2 : px + ph/2, py + ph/2, ph/2 - 3, 0, Math.PI*2); ctx.fill();
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = on ? '#04371c' : '#333';
+    ctx.textAlign = 'center';
+    ctx.fillText(on ? 'ВКЛ' : 'ВЫКЛ', on ? px + (pw-ph/2)/2 - 4 : px + ph/2 + (pw-ph/2)/2 + 4, py + ph/2 + 0.5);
+    ctx.restore();
+  }
+
   function _pauseBtn(ctx) {
     const img = screens.pause_button;
     if (img && img.complete && img.naturalWidth) ctx.drawImage(img, 8, 12, 40, 40); // слева от панели O₂, поднята на 14px (~5мм)
@@ -188,6 +216,7 @@ const UIManager = (() => {
       // кнопка паузы 15..55
       if (x >= 4 && x <= 56 && y >= 8 && y <= 56) {
         _flash = { x: 8, y: 12, w: 40, h: 40, t: 0.25 };
+        AudioFX.play('tap');
         setState(STATE.PAUSED);
         Game.pause();
         return true;
@@ -198,7 +227,7 @@ const UIManager = (() => {
     const list = BUTTONS[state] || [];
     for (const b of list) {
       if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
-        if (b.w < 480) _flash = { x: b.x, y: b.y, w: b.w, h: b.h, t: 0.25 }; // полноэкранные back-зоны не подсвечиваем
+        if (b.w < 480) { _flash = { x: b.x, y: b.y, w: b.w, h: b.h, t: 0.25 }; AudioFX.play('tap'); } // полноэкранные back-зоны не подсвечиваем
         _onButton(b.id);
         return true;
       }
@@ -230,6 +259,10 @@ const UIManager = (() => {
       case 'records':
         _prevState = state;
         setState(STATE.RECORDS);
+        break;
+      case 'vibro':
+        AudioFX.setVibro(!AudioFX.getVibro());
+        AudioFX.vibrate(30); // тактильное подтверждение при включении
         break;
       case 'back':
         setState(_prevState === STATE.PAUSED ? STATE.PAUSED : STATE.MENU);

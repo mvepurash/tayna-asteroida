@@ -79,10 +79,11 @@ const Input = (() => {
       if (typeof UIManager !== 'undefined' && UIManager.handleClick(x, y)) return;
       if (typeof HUD === 'undefined') return;
       const dir = HUD.hitDpad(x, y);
-      if (dir) { Astronaut.handleInput(dir); HUD.setDpadPressed(dir, true); }
+      if (dir) { Astronaut.handleInput(dir); HUD.setDpadPressed(dir, true); AudioFX.play('tap'); AudioFX.vibrate(12); }
       if (HUD.hitMine(x, y)) {
         Astronaut.handleMine();
         if (typeof Crystals !== 'undefined') Crystals.mine();
+        AudioFX.play('mine'); AudioFX.vibrate(18);
       }
     }, { passive: false });
 
@@ -99,10 +100,11 @@ const Input = (() => {
       if (typeof HUD === 'undefined') return;
       const dir = HUD.hitDpad(x, y);
       console.log('[Input] dpad hit:', dir);
-      if (dir) { Astronaut.handleInput(dir); HUD.setDpadPressed(dir, true); }
+      if (dir) { Astronaut.handleInput(dir); HUD.setDpadPressed(dir, true); AudioFX.play('tap'); AudioFX.vibrate(12); }
       if (HUD.hitMine(x, y)) {
         Astronaut.handleMine();
         if (typeof Crystals !== 'undefined') Crystals.mine();
+        AudioFX.play('mine'); AudioFX.vibrate(18);
       }
     });
 
