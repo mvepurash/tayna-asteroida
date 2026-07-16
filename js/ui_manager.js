@@ -70,7 +70,7 @@ const UIManager = (() => {
       const img = new Image();
       img.onload = () => { loaded++; if (loaded === names.length) ready = true; };
       img.onerror = () => { loaded++; console.warn('[UI] не загружен:', n); };
-      img.src = 'assets/ui_designs/' + n + '.png';
+      img.src = 'assets/ui_designs/' + n + '.webp';
       screens[n] = img;
     });
   }
@@ -158,7 +158,16 @@ const UIManager = (() => {
 
   function _full(ctx, name) {
     const img = screens[name];
-    if (img && img.complete && img.naturalWidth) ctx.drawImage(img, 0, 0, CONFIG.CANVAS_W, CONFIG.CANVAS_H);
+    if (img && img.complete && img.naturalWidth) {
+      ctx.drawImage(img, 0, 0, CONFIG.CANVAS_W, CONFIG.CANVAS_H);
+    } else {
+      // экран ещё грузится — показываем индикатор, а не чёрную дыру
+      ctx.fillStyle = '#9fd8ff';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const dots = '.'.repeat(1 + Math.floor(performance.now() / 400) % 3);
+      ctx.fillText('ЗАГРУЗКА' + dots, CONFIG.CANVAS_W / 2, CONFIG.CANVAS_H / 2);
+    }
   }
   function _overlay(ctx) {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
