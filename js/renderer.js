@@ -232,6 +232,7 @@ const Renderer = (() => {
     _updateAnim(dt || 0);
     if (_glowT > 0) _glowT = Math.max(0, _glowT - (dt || 0));
     _drawAstronaut();
+    _drawSparks(dt || 0);
     if (typeof HUD !== 'undefined') HUD.draw(ctx, dt);
     if (CONFIG.DEBUG) _drawDebug();
   }
@@ -464,6 +465,7 @@ const Renderer = (() => {
   }
 
   let _glowT = 0; // таймер послесвечения бура (сек)
+  let _sparks = []; // летящие искры с кончика бура
   let _spawnDbg = -1; // фактически отрисованный кадр спавна (для проверки)
 
   // Мультяшный спавн (14.07.2026): луч + материализация в воротах,
@@ -535,14 +537,45 @@ const Renderer = (() => {
     const gx = x + dx, gy = y + dy;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, 16);
-    g.addColorStop(0,   `rgba(180,240,255,${0.85 * p})`);
-    g.addColorStop(0.4, `rgba(60,190,255,${0.50 * p})`);
-    g.addColorStop(1,   'rgba(0,120,255,0)');
+    const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, 18);
+    g.addColorStop(0,   `rgba(255,240,190,${0.95 * p})`);   // тёплое ядро — контраст к фиолетовому кристаллу
+    g.addColorStop(0.4, `rgba(255,170,60,${0.55 * p})`);
+    g.addColorStop(1,   'rgba(255,100,0,0)');
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(gx, gy, 16, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = `rgba(255,255,255,${0.9 * p})`;    // белое ядро-искра
+    ctx.beginPath(); ctx.arc(gx, gy, 18, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(255,255,255,${0.95 * p})`;
     ctx.beginPath(); ctx.arc(gx, gy, 2.5 + 1.5 * p, 0, Math.PI * 2); ctx.fill();
+
+    // ИСКРЫ: спавн 2-3 шт/кадр пока идёт добыча/послесвечение
+    const n = 2 + (Math.random() < 0.5 ? 1 : 0);
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4; // веером вверх
+      const sp = 60 + Math.random() * 90;
+      _sparks.push({ x: gx, y: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+                     life: 0.30 + Math.random() * 0.25, age: 0, sz: 1.2 + Math.random() * 1.6 });
+    }
+    ctx.restore();
+  }
+
+  // Летящие искры (обновление+рисование каждый кадр, поверх кристалла)
+  function _drawSparks(dt) {
+    if (!_sparks.length) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = _sparks.length - 1; i >= 0; i--) {
+      const s = _sparks[i];
+      s.age += dt;
+      if (s.age >= s.life) { _sparks.splice(i, 1); continue; }
+      s.x += s.vx * dt; s.y += s.vy * dt;
+      s.vy += 240 * dt; // гравитация
+      const t = 1 - s.age / s.life;
+      ctx.strokeStyle = t > 0.55 ? `rgba(255,250,210,${t})` : `rgba(255,150,40,${t})`;
+      ctx.lineWidth = s.sz;
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y);
+      ctx.lineTo(s.x - s.vx * 0.035, s.y - s.vy * 0.035); // хвостик-штрих по скорости
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
