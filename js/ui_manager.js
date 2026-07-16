@@ -39,9 +39,14 @@ const UIManager = (() => {
       { id: 'resume',   x: 405, y: 88,  w: 60,  h: 42 },  // X (закрыть, верх-право панели)
     ],
     // Настройки (settings_screen.png): пока только "назад"
-    settings: [
-      { id: 'vibro', x: 110, y: 620, w: 260, h: 48 }, // тумблер вибрации (рисуется кодом)
-      { id: 'back',  x: 0,   y: 0,   w: 480, h: 854 },
+    settings: [  // зоны сняты с макета settings_screen.png (16.07.2026)
+      { id: 'music', x: 85,  y: 214, w: 380, h: 50 },  // строка МУЗЫКА
+      { id: 'sfx',   x: 85,  y: 281, w: 380, h: 50 },  // строка ЗВУКОВЫЕ ЭФФЕКТЫ
+      { id: 'vibro', x: 85,  y: 351, w: 380, h: 50 },  // строка ВИБРАЦИЯ
+      { id: 'reset', x: 75,  y: 505, w: 405, h: 62 },  // СБРОС ПРОГРЕССА (двойной клик)
+      { id: 'back',  x: 90,  y: 588, w: 165, h: 44 },  // НАЗАД
+      { id: 'back',  x: 262, y: 588, w: 175, h: 44 },  // ПРИМЕНИТЬ (настройки мгновенные)
+      { id: 'back',  x: 388, y: 138, w: 46,  h: 46 },  // X
     ],
     howto: [
       { id: 'back', x: 0, y: 0, w: 480, h: 854 },  // X/ПОНЯТНО/любой клик = назад в паузу
@@ -81,6 +86,7 @@ const UIManager = (() => {
 
   let _adTimer = 0; // отсчёт заглушки рекламы
   let _flash = null; // эффект нажатия кнопки: {x,y,w,h,t}
+  let _resetArm = 0; // таймер подтверждения сброса прогресса
 
   // ---------- Отрисовка ----------
   function draw(ctx, dt) {
@@ -90,7 +96,7 @@ const UIManager = (() => {
       case STATE.PAUSED:
         _overlay(ctx); _full(ctx, 'pause_screen'); break;
       case STATE.SETTINGS:
-        _overlay(ctx); _full(ctx, 'settings_screen'); _drawSettingsExtras(ctx); break;
+        _overlay(ctx); _full(ctx, 'settings_screen'); _drawSettingsExtras(ctx, dt); break;
       case STATE.HOWTO:
         _overlay(ctx); _full(ctx, 'briefing_screen'); break;
       case STATE.RECORDS:
@@ -178,29 +184,39 @@ const UIManager = (() => {
     ctx.restore();
   }
 
-  // Кодовый тумблер вибрации на экране настроек (16.07.2026)
-  function _drawSettingsExtras(ctx) {
-    const on = AudioFX.getVibro();
-    const x = 110, y = 620, w = 260, h = 48;
+  // Живые тумблеры поверх родных пилюль макета (16.07.2026)
+  function _drawSettingsExtras(ctx, dt) {
+    if (_resetArm > 0) _resetArm = Math.max(0, _resetArm - (dt || 0));
+    const rows = [
+      [237, AudioFX.getMusic()],
+      [304, AudioFX.getSfx()],
+      [374, AudioFX.getVibro()],
+    ];
     ctx.save();
-    ctx.fillStyle = 'rgba(10,25,40,0.85)';
-    ctx.strokeStyle = 'rgba(0,212,255,0.7)';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#eaf6ff';
-    ctx.font = 'bold 17px sans-serif';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText('ВИБРАЦИЯ', x + 16, y + h/2);
-    // пилюля-переключатель
-    const pw = 64, ph = 28, px = x + w - pw - 14, py = y + (h - ph)/2;
-    ctx.fillStyle = on ? 'rgba(0,214,98,0.85)' : 'rgba(120,120,120,0.6)';
-    ctx.beginPath(); ctx.roundRect(px, py, pw, ph, ph/2); ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(on ? px + pw - ph/2 : px + ph/2, py + ph/2, ph/2 - 3, 0, Math.PI*2); ctx.fill();
-    ctx.font = 'bold 11px sans-serif';
-    ctx.fillStyle = on ? '#04371c' : '#333';
-    ctx.textAlign = 'center';
-    ctx.fillText(on ? 'ВКЛ' : 'ВЫКЛ', on ? px + (pw-ph/2)/2 - 4 : px + ph/2 + (pw-ph/2)/2 + 4, py + ph/2 + 0.5);
+    for (const [cy, on] of rows) {
+      // закрасить вшитую пилюлю фоном строки
+      ctx.fillStyle = '#0c1a26';
+      ctx.beginPath(); ctx.roundRect(342, cy - 20, 118, 40, 8); ctx.fill();
+      // пилюля по фактическому состоянию
+      const pw = 88, ph = 32, px = 352, py = cy - ph / 2;
+      ctx.fillStyle = on ? 'rgba(0,214,98,0.9)' : 'rgba(110,110,110,0.7)';
+      ctx.beginPath(); ctx.roundRect(px, py, pw, ph, ph / 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(on ? px + pw - ph / 2 : px + ph / 2, py + ph / 2, ph / 2 - 3, 0, Math.PI * 2); ctx.fill();
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = on ? '#04371c' : '#e8e8e8';
+      ctx.fillText(on ? 'ON' : 'OFF', on ? px + (pw - ph) / 2 : px + ph + (pw - ph) / 2 - 14, py + ph / 2 + 1);
+    }
+    // индикатор подтверждения сброса
+    if (_resetArm > 0) {
+      ctx.fillStyle = 'rgba(120,0,0,0.85)';
+      ctx.beginPath(); ctx.roundRect(75, 505, 405, 62, 10); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('НАЖМИТЕ ЕЩЁ РАЗ ДЛЯ СБРОСА (' + Math.ceil(_resetArm) + ')', 277, 536);
+    }
     ctx.restore();
   }
 
@@ -260,9 +276,25 @@ const UIManager = (() => {
         _prevState = state;
         setState(STATE.RECORDS);
         break;
+      case 'music':
+        AudioFX.setMusic(!AudioFX.getMusic());
+        break;
+      case 'sfx':
+        AudioFX.setSfx(!AudioFX.getSfx());
+        if (AudioFX.getSfx()) AudioFX.play('tap');
+        break;
       case 'vibro':
         AudioFX.setVibro(!AudioFX.getVibro());
         AudioFX.vibrate(30); // тактильное подтверждение при включении
+        break;
+      case 'reset':
+        if (_resetArm > 0) {
+          Save.clear();
+          Crystals.init();
+          _resetArm = 0;
+        } else {
+          _resetArm = 3.0; // ждём подтверждающий клик 3 секунды
+        }
         break;
       case 'back':
         setState(_prevState === STATE.PAUSED ? STATE.PAUSED : STATE.MENU);
