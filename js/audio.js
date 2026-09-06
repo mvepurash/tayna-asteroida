@@ -7,13 +7,20 @@
 const AudioFX = (() => {
 
   const FILES = ['tap','mine','deliver','warning','death','spawn','reward'];
+  const MUSIC_MAIN  = 'assets/music/asteroid_ambient_01.mp3';  // фоновая музыка игры
+  const MUSIC_DEATH = 'assets/music/asteroid_ambient_02.mp3';  // музыка экрана Game Over
+  const MUSIC_FADE_MS = 300;
   let ctx = null, master = null;
   const buf = {};
   let volume  = parseFloat(localStorage.getItem('ta_vol')  ?? '1');
   let vibroOn = (localStorage.getItem('ta_vibro') ?? '1') === '1';
   let sfxOn   = (localStorage.getItem('ta_sfx')   ?? '1') === '1';
   let musicOn = (localStorage.getItem('ta_music') ?? '1') === '1';
-  let musicNodes = null; // осцилляторы дрона-заглушки
+
+  // Фоновая музыка — обычные <audio>-элементы (стриминг, без decodeAudioData
+  // тяжёлых mp3 целиком в память). currentTrack: 'main' | 'death' | null.
+  let mainMusicEl = null, deathMusicEl = null, currentTrack = null;
+  let _wasPlayingOnPause = null; // трек, приостановленный через pause()
 
   function _init() {
     if (ctx) return;
@@ -30,29 +37,62 @@ const AudioFX = (() => {
         .then(b => { buf[n] = b; })
         .catch(() => console.warn('[AudioFX] не загружен:', n));
     });
-    if (musicOn) _startMusic();
+    _initMusicElements();
+    if (musicOn) playMainMusic();
   }
 
-  // Фоновая музыка-ЗАГЛУШКА: синтезированный космо-дрон (луп без файла).
-  // Замена на трек: положить assets/sfx/music.mp3 и переписать _startMusic на BufferSource loop=true.
-  function _startMusic() {
-    if (!ctx || musicNodes) return;
-    const g = ctx.createGain(); g.gain.value = 0.10; g.connect(master);
-    const mk = (type, freq, det) => {
-      const o = ctx.createOscillator(); o.type = type; o.frequency.value = freq; o.detune.value = det || 0;
-      o.connect(g); o.start(); return o;
-    };
-    const o1 = mk('sine', 55), o2 = mk('sine', 82.5, 6), o3 = mk('triangle', 110, -5);
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.08;
-    const lg = ctx.createGain(); lg.gain.value = 0.05;
-    lfo.connect(lg); lg.connect(g.gain); lfo.start();
-    musicNodes = { g, osc: [o1, o2, o3, lfo] };
+  function _initMusicElements() {
+    if (mainMusicEl) return;
+    mainMusicEl = new Audio(MUSIC_MAIN);
+    mainMusicEl.loop = true;
+    mainMusicEl.preload = 'auto';
+    mainMusicEl.volume = volume;
+    deathMusicEl = new Audio(MUSIC_DEATH);
+    deathMusicEl.loop = true;
+    deathMusicEl.preload = 'auto';
+    deathMusicEl.volume = volume;
   }
+
+  function _fade(el, from, to, ms) {
+    if (!el) return;
+    const start = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / ms);
+      el.volume = from + (to - from) * t;
+      if (t < 1) requestAnimationFrame(step); 
+    };
+    requestAnimationFrame(step);
+  }
+
+  // Переключение на фоновый трек игры (меню, полёт). Останавливает трек смерти.
+  function playMainMusic() {
+    _initMusicElements();
+    if (currentTrack === 'main') return;
+    if (deathMusicEl && !deathMusicEl.paused) { deathMusicEl.pause(); deathMusicEl.currentTime = 0; }
+    currentTrack = 'main';
+    if (!musicOn) return;
+    mainMusicEl.volume = 0;
+    mainMusicEl.currentTime = mainMusicEl.currentTime || 0;
+    mainMusicEl.play().catch(() => {});
+    _fade(mainMusicEl, 0, volume, MUSIC_FADE_MS);
+  }
+
+  // Переключение на трек экрана смерти (Game Over). Останавливает основной трек.
+  function playDeathMusic() {
+    _initMusicElements();
+    if (currentTrack === 'death') return;
+    if (mainMusicEl && !mainMusicEl.paused) { mainMusicEl.pause(); }
+    currentTrack = 'death';
+    if (!musicOn) return;
+    deathMusicEl.volume = 0;
+    deathMusicEl.currentTime = 0;
+    deathMusicEl.play().catch(() => {});
+    _fade(deathMusicEl, 0, volume, MUSIC_FADE_MS);
+  }
+
   function _stopMusic() {
-    if (!musicNodes) return;
-    musicNodes.osc.forEach(o => { try { o.stop(); } catch(e){} });
-    musicNodes.g.disconnect();
-    musicNodes = null;
+    if (mainMusicEl)  mainMusicEl.pause();
+    if (deathMusicEl) deathMusicEl.pause();
   }
 
   function play(name, vol = 1) {
@@ -73,11 +113,23 @@ const AudioFX = (() => {
     volume = Math.max(0, Math.min(1, v));
     localStorage.setItem('ta_vol', String(volume));
     if (master) master.gain.value = volume;
+    if (mainMusicEl  && currentTrack === 'main')  mainMusicEl.volume  = volume;
+    if (deathMusicEl && currentTrack === 'death') deathMusicEl.volume = volume;
   }
   function getVolume() { return volume; }
 
-  function pause()  { if (ctx && ctx.state === 'running')  ctx.suspend(); }
-  function resume() { if (ctx && ctx.state === 'suspended') ctx.resume(); }
+  function pause() {
+    if (ctx && ctx.state === 'running') ctx.suspend();
+    _wasPlayingOnPause = null;
+    if (currentTrack === 'main'  && mainMusicEl  && !mainMusicEl.paused)  { mainMusicEl.pause();  _wasPlayingOnPause = 'main';  }
+    if (currentTrack === 'death' && deathMusicEl && !deathMusicEl.paused) { deathMusicEl.pause(); _wasPlayingOnPause = 'death'; }
+  }
+  function resume() {
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+    if (musicOn && _wasPlayingOnPause === 'main'  && mainMusicEl)  mainMusicEl.play().catch(() => {});
+    if (musicOn && _wasPlayingOnPause === 'death' && deathMusicEl) deathMusicEl.play().catch(() => {});
+    _wasPlayingOnPause = null;
+  }
 
   // ---- Вибрация (Android Chrome; iOS не поддерживает Vibration API) ----
   function vibrate(ms) {
@@ -93,11 +145,18 @@ const AudioFX = (() => {
   function setMusic(on) {
     musicOn = !!on; localStorage.setItem('ta_music', musicOn ? '1' : '0');
     _init();
-    if (musicOn) _startMusic(); else _stopMusic();
+    if (musicOn) {
+      // включаем именно тот трек, что должен звучать по текущей сцене
+      const wanted = currentTrack === 'death' ? 'death' : 'main';
+      currentTrack = null; // сброс, чтобы play*Music() не увидел "уже играет" и правда запустил звук
+      if (wanted === 'death') playDeathMusic(); else playMainMusic();
+    } else {
+      _stopMusic();
+    }
   }
   function getMusic()   { return musicOn; }
   function unlock()     { _init(); if (ctx && ctx.state === 'suspended') ctx.resume(); }
 
-  return { play, setVolume, getVolume, pause, resume, vibrate, setVibro, getVibro, setSfx, getSfx, setMusic, getMusic, unlock };
+  return { play, setVolume, getVolume, pause, resume, vibrate, setVibro, getVibro, setSfx, getSfx, setMusic, getMusic, unlock, playMainMusic, playDeathMusic };
 
 })();

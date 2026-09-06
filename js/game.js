@@ -54,6 +54,7 @@ const Game = (() => {
     deathTimer      = 0;
     invincTimer     = 0;
     _runStart = 0;
+    AudioFX.playMainMusic();
     AudioFX.play('spawn');
     Astronaut.startSpawning();
     Tentacles._startFirstSlot();
@@ -61,12 +62,13 @@ const Game = (() => {
     lastTime = performance.now();
   }
 
-  // Выход в меню (из паузы) — глушим сессию
+  // Выход в меню (из паузы или Game Over) — глушим сессию
   function stopToMenu() {
     waitingRespawn = false;
     waitingDeath   = false;
     running        = true;  // цикл продолжает рендерить меню
     lastTime       = performance.now();
+    AudioFX.playMainMusic();
   }
 
   // Продолжение после рекламы (+1 жизнь): респавн без сброса кристаллов сессии
@@ -103,6 +105,7 @@ const Game = (() => {
         if (_pendingGameOver) {
           _pendingGameOver = false;
           UIManager.setState(UIManager.STATE.GAME_OVER);
+          AudioFX.playDeathMusic();
           Renderer.draw(0);
           UIManager.draw(_ctx(), dt);
           requestAnimationFrame(loop);
