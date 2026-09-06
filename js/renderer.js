@@ -421,14 +421,16 @@ const Renderer = (() => {
       y += 72;
     }
 
-    if (st === Astronaut.STATE.MINING) _glowT = 0.45;      // при удержании горит постоянно
-    if (_glowT > 0) _drawDrillGlow(x, y, anim.mirror);      // послесвечение после тапа
-
     // Узел 13: астронавт стоит ближе к кристаллам (+28px вниз, ~1-1.5см) — запрос 13.07.2026.
     // Только когда стоит/добывает, чтобы не было скачка при движении.
     if ((Astronaut.getNode() == 13) && st !== Astronaut.STATE.MOVING) {
       y += 28;
     }
+
+    // Свечение/искры бура считаем ПОСЛЕ сдвига y для узла 13 — иначе кончик
+    // бура смещается на 28px и попадает на шлем вместо руки с инструментом.
+    if (st === Astronaut.STATE.MINING) _glowT = 0.45;      // при удержании горит постоянно
+    if (_glowT > 0) _drawDrillGlow(x, y, anim.mirror);      // послесвечение после тапа
 
     // Мигание во время неуязвимости
     const invinc = typeof Game !== 'undefined' && Game.invincTimer > 0;
