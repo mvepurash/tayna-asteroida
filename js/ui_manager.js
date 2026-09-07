@@ -87,6 +87,7 @@ const UIManager = (() => {
   let _adTimer = 0; // отсчёт заглушки рекламы
   let _flash = null; // эффект нажатия кнопки: {x,y,w,h,t}
   let _resetArm = 0; // таймер подтверждения сброса прогресса
+  let _toggleAnim = null; // эффект нажатия тумблера: {id, t}
 
   // ---------- Отрисовка ----------
   function draw(ctx, dt) {
@@ -196,26 +197,50 @@ const UIManager = (() => {
   // Живые тумблеры поверх родных пилюль макета (16.07.2026)
   function _drawSettingsExtras(ctx, dt) {
     if (_resetArm > 0) _resetArm = Math.max(0, _resetArm - (dt || 0));
+    if (_toggleAnim) {
+      _toggleAnim.t -= (dt || 0);
+      if (_toggleAnim.t <= 0) _toggleAnim = null;
+    }
     const rows = [
-      [237, AudioFX.getMusic()],
-      [304, AudioFX.getSfx()],
-      [374, AudioFX.getVibro()],
+      [237, 'music', AudioFX.getMusic()],
+      [304, 'sfx',   AudioFX.getSfx()],
+      [374, 'vibro', AudioFX.getVibro()],
     ];
     ctx.save();
-    for (const [cy, on] of rows) {
+    for (const [cy, id, on] of rows) {
       // закрасить вшитую пилюлю фоном строки
       ctx.fillStyle = '#0c1a26';
       ctx.beginPath(); ctx.roundRect(342, cy - 20, 118, 40, 8); ctx.fill();
-      // пилюля по фактическому состоянию
+
+      // Эффект нажатия: пилюля сжимается к своему центру + голубое свечение
+      // (тот же язык, что у D-pad: scale ~88%, shadowBlur, без грубой рамки на всю строку)
+      const pressed = _toggleAnim && _toggleAnim.id === id;
+      const pt = pressed ? Math.max(0, _toggleAnim.t) : 0;
+      const pa = pt / 0.18; // 0..1, доля анимации, ещё оставшаяся
+      const scale = pressed ? (1 - 0.12 * pa) : 1;
+
       const pw = 88, ph = 32, px = 352, py = cy - ph / 2;
+      const ccx = px + pw / 2, ccy = py + ph / 2;
+
+      ctx.save();
+      if (pressed) {
+        ctx.translate(ccx, ccy);
+        ctx.scale(scale, scale);
+        ctx.translate(-ccx, -ccy);
+        ctx.shadowColor = 'rgba(0,212,255,0.95)';
+        ctx.shadowBlur = 14 * pa;
+      }
+      // пилюля по фактическому состоянию
       ctx.fillStyle = on ? 'rgba(0,214,98,0.9)' : 'rgba(110,110,110,0.7)';
       ctx.beginPath(); ctx.roundRect(px, py, pw, ph, ph / 2); ctx.fill();
+      ctx.shadowBlur = 0;
       ctx.fillStyle = '#fff';
       ctx.beginPath(); ctx.arc(on ? px + pw - ph / 2 : px + ph / 2, py + ph / 2, ph / 2 - 3, 0, Math.PI * 2); ctx.fill();
       ctx.font = 'bold 13px sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = on ? '#04371c' : '#e8e8e8';
       ctx.fillText(on ? 'ON' : 'OFF', on ? px + (pw - ph) / 2 : px + ph + (pw - ph) / 2 - 14, py + ph / 2 + 1);
+      ctx.restore();
     }
     // индикатор подтверждения сброса
     if (_resetArm > 0) {
@@ -252,7 +277,15 @@ const UIManager = (() => {
     const list = BUTTONS[state] || [];
     for (const b of list) {
       if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
-        if (b.w < 480) { _flash = { x: b.x, y: b.y, w: b.w, h: b.h, t: 0.25 }; AudioFX.play('tap'); } // полноэкранные back-зоны не подсвечиваем
+        const isToggle = (b.id === 'music' || b.id === 'sfx' || b.id === 'vibro');
+        if (isToggle) {
+          // Тумблеры получают собственный точечный эффект (см. _drawSettingsExtras),
+          // а не грубую неоновую рамку на всю строку
+          _toggleAnim = { id: b.id, t: 0.18 };
+          AudioFX.play('tap');
+        } else if (b.w < 480) {
+          _flash = { x: b.x, y: b.y, w: b.w, h: b.h, t: 0.25 }; AudioFX.play('tap');
+        } // полноэкранные back-зоны не подсвечиваем
         _onButton(b.id);
         return true;
       }

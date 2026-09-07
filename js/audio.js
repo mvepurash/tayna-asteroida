@@ -38,7 +38,10 @@ const AudioFX = (() => {
         .catch(() => console.warn('[AudioFX] не загружен:', n));
     });
     _initMusicElements();
-    if (musicOn) playMainMusic();
+    // Музыку НЕ запускаем здесь автоматически — только по явному вызову
+    // playMainMusic()/playDeathMusic() из game.js (кнопка "НАЧАТЬ МИССИЮ"
+    // и переходы состояний), чтобы она не играла раньше, чем пользователь
+    // реально нажал старт (даже если первый тап был по другой кнопке меню).
   }
 
   function _initMusicElements() {
@@ -57,42 +60,64 @@ const AudioFX = (() => {
     if (!el) return;
     const start = performance.now();
     const step = (now) => {
-      const t = Math.min(1, (now - start) / ms);
-      el.volume = from + (to - from) * t;
-      if (t < 1) requestAnimationFrame(step); 
+      try {
+        const t = Math.min(1, (now - start) / ms);
+        el.volume = from + (to - from) * t;
+        if (t < 1) requestAnimationFrame(step);
+      } catch (e) { /* аудио — второстепенный эффект, никогда не должен ронять игру */ }
     };
-    requestAnimationFrame(step);
+    try { requestAnimationFrame(step); } catch (e) {}
+  }
+
+  // Безопасный запуск HTMLMediaElement: .play() в редких случаях (политики
+  // браузера/расширения/корп. окружение) может не вернуть нормальный Promise
+  // или выбросить исключение синхронно — это НИКОГДА не должно ломать игровую
+  // логику выше по стеку вызовов (клик "старт", смена состояний UI и т.д.)
+  function _safePlay(el) {
+    if (!el) return;
+    try {
+      const p = el.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (e) { /* проглатываем — звук необязателен для работы игры */ }
+  }
+  function _safePause(el) {
+    if (!el) return;
+    try { el.pause(); } catch (e) {}
   }
 
   // Переключение на фоновый трек игры (меню, полёт). Останавливает трек смерти.
   function playMainMusic() {
-    _initMusicElements();
-    if (currentTrack === 'main') return;
-    if (deathMusicEl && !deathMusicEl.paused) { deathMusicEl.pause(); deathMusicEl.currentTime = 0; }
-    currentTrack = 'main';
-    if (!musicOn) return;
-    mainMusicEl.volume = 0;
-    mainMusicEl.currentTime = mainMusicEl.currentTime || 0;
-    mainMusicEl.play().catch(() => {});
-    _fade(mainMusicEl, 0, volume, MUSIC_FADE_MS);
+    try {
+      _initMusicElements();
+      if (currentTrack === 'main') return;
+      if (deathMusicEl && !deathMusicEl.paused) { _safePause(deathMusicEl); deathMusicEl.currentTime = 0; }
+      currentTrack = 'main';
+      if (!musicOn) return;
+      mainMusicEl.volume = 0;
+      mainMusicEl.currentTime = mainMusicEl.currentTime || 0;
+      _safePlay(mainMusicEl);
+      _fade(mainMusicEl, 0, volume, MUSIC_FADE_MS);
+    } catch (e) { console.warn('[AudioFX] playMainMusic:', e); }
   }
 
   // Переключение на трек экрана смерти (Game Over). Останавливает основной трек.
   function playDeathMusic() {
-    _initMusicElements();
-    if (currentTrack === 'death') return;
-    if (mainMusicEl && !mainMusicEl.paused) { mainMusicEl.pause(); }
-    currentTrack = 'death';
-    if (!musicOn) return;
-    deathMusicEl.volume = 0;
-    deathMusicEl.currentTime = 0;
-    deathMusicEl.play().catch(() => {});
-    _fade(deathMusicEl, 0, volume, MUSIC_FADE_MS);
+    try {
+      _initMusicElements();
+      if (currentTrack === 'death') return;
+      if (mainMusicEl && !mainMusicEl.paused) { _safePause(mainMusicEl); }
+      currentTrack = 'death';
+      if (!musicOn) return;
+      deathMusicEl.volume = 0;
+      deathMusicEl.currentTime = 0;
+      _safePlay(deathMusicEl);
+      _fade(deathMusicEl, 0, volume, MUSIC_FADE_MS);
+    } catch (e) { console.warn('[AudioFX] playDeathMusic:', e); }
   }
 
   function _stopMusic() {
-    if (mainMusicEl)  mainMusicEl.pause();
-    if (deathMusicEl) deathMusicEl.pause();
+    _safePause(mainMusicEl);
+    _safePause(deathMusicEl);
   }
 
   function play(name, vol = 1) {
