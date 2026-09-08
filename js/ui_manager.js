@@ -194,7 +194,22 @@ const UIManager = (() => {
     ctx.restore();
   }
 
-  // Живые тумблеры поверх родных пилюль макета (16.07.2026)
+  // Живые ползунки поверх трека нового макета (seting.png, 08.09.2026).
+  // Трек и подписи ON/OFF запечены в фон — JS двигает только сам кружок-ползунок.
+  // Координаты вымерены по вставленному макету (480×854):
+  const TOGGLE_TRACK = { xLeft: 302, xRight: 372, onX: 320, offX: 354, r: 8 };
+  const TOGGLE_ANIM_DURATION = 0.18;
+
+  function _toggleKnobX(id, on) {
+    const targetX = on ? TOGGLE_TRACK.onX : TOGGLE_TRACK.offX;
+    if (_toggleAnim && _toggleAnim.id === id && _toggleAnim.t > 0) {
+      const fromX = _toggleAnim.fromOn ? TOGGLE_TRACK.onX : TOGGLE_TRACK.offX;
+      const p = 1 - (_toggleAnim.t / TOGGLE_ANIM_DURATION); // 0..1, ease пока линейный
+      return fromX + (targetX - fromX) * p;
+    }
+    return targetX;
+  }
+
   function _drawSettingsExtras(ctx, dt) {
     if (_resetArm > 0) _resetArm = Math.max(0, _resetArm - (dt || 0));
     if (_toggleAnim) {
@@ -202,44 +217,26 @@ const UIManager = (() => {
       if (_toggleAnim.t <= 0) _toggleAnim = null;
     }
     const rows = [
-      [237, 'music', AudioFX.getMusic()],
-      [304, 'sfx',   AudioFX.getSfx()],
-      [374, 'vibro', AudioFX.getVibro()],
+      [244, 'music', AudioFX.getMusic()],
+      [311, 'sfx',   AudioFX.getSfx()],
+      [380, 'vibro', AudioFX.getVibro()],
     ];
     ctx.save();
     for (const [cy, id, on] of rows) {
-      // закрасить вшитую пилюлю фоном строки
-      ctx.fillStyle = '#0c1a26';
-      ctx.beginPath(); ctx.roundRect(342, cy - 20, 118, 40, 8); ctx.fill();
+      // Закрасить ТОЛЬКО внутреннюю часть трека (между рамками) фоновым тёмным
+      // цветом — стирает запечённый в макете дефолтный кружок, саму рамку
+      // трека и подписи ON/OFF не трогаем, они остаются частью картинки.
+      ctx.fillStyle = '#000c14';
+      ctx.beginPath();
+      ctx.roundRect(TOGGLE_TRACK.xLeft + 3, cy - 10, (TOGGLE_TRACK.xRight - TOGGLE_TRACK.xLeft) - 6, 20, 10);
+      ctx.fill();
 
-      // Эффект нажатия: пилюля сжимается к своему центру + голубое свечение
-      // (тот же язык, что у D-pad: scale ~88%, shadowBlur, без грубой рамки на всю строку)
-      const pressed = _toggleAnim && _toggleAnim.id === id;
-      const pt = pressed ? Math.max(0, _toggleAnim.t) : 0;
-      const pa = pt / 0.18; // 0..1, доля анимации, ещё оставшаяся
-      const scale = pressed ? (1 - 0.12 * pa) : 1;
-
-      const pw = 88, ph = 32, px = 352, py = cy - ph / 2;
-      const ccx = px + pw / 2, ccy = py + ph / 2;
-
+      const kx = _toggleKnobX(id, on);
       ctx.save();
-      if (pressed) {
-        ctx.translate(ccx, ccy);
-        ctx.scale(scale, scale);
-        ctx.translate(-ccx, -ccy);
-        ctx.shadowColor = 'rgba(0,212,255,0.95)';
-        ctx.shadowBlur = 14 * pa;
-      }
-      // пилюля по фактическому состоянию
-      ctx.fillStyle = on ? 'rgba(0,214,98,0.9)' : 'rgba(110,110,110,0.7)';
-      ctx.beginPath(); ctx.roundRect(px, py, pw, ph, ph / 2); ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(on ? px + pw - ph / 2 : px + ph / 2, py + ph / 2, ph / 2 - 3, 0, Math.PI * 2); ctx.fill();
-      ctx.font = 'bold 13px sans-serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = on ? '#04371c' : '#e8e8e8';
-      ctx.fillText(on ? 'ON' : 'OFF', on ? px + (pw - ph) / 2 : px + ph + (pw - ph) / 2 - 14, py + ph / 2 + 1);
+      ctx.shadowColor = 'rgba(80,220,255,0.95)';
+      ctx.shadowBlur = 9;
+      ctx.fillStyle = '#eafcff';
+      ctx.beginPath(); ctx.arc(kx, cy, TOGGLE_TRACK.r, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
     // индикатор подтверждения сброса
@@ -279,9 +276,13 @@ const UIManager = (() => {
       if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
         const isToggle = (b.id === 'music' || b.id === 'sfx' || b.id === 'vibro');
         if (isToggle) {
-          // Тумблеры получают собственный точечный эффект (см. _drawSettingsExtras),
-          // а не грубую неоновую рамку на всю строку
-          _toggleAnim = { id: b.id, t: 0.18 };
+          // Тумблеры получают собственную анимацию скольжения ползунка
+          // (см. _drawSettingsExtras) — запоминаем состояние ДО переключения,
+          // чтобы кружок плавно проехал из старой позиции в новую.
+          const fromOn = b.id === 'music' ? AudioFX.getMusic()
+                       : b.id === 'sfx'   ? AudioFX.getSfx()
+                       : AudioFX.getVibro();
+          _toggleAnim = { id: b.id, fromOn, t: TOGGLE_ANIM_DURATION };
           AudioFX.play('tap');
         } else if (b.w < 480) {
           _flash = { x: b.x, y: b.y, w: b.w, h: b.h, t: 0.25 }; AudioFX.play('tap');
