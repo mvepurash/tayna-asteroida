@@ -37,12 +37,16 @@ const AudioFX = (() => {
         .then(b => { buf[n] = b; })
         .catch(() => console.warn('[AudioFX] не загружен:', n));
     });
-    _initMusicElements();
-    // Музыку НЕ запускаем здесь автоматически — только по явному вызову
-    // playMainMusic()/playDeathMusic() из game.js (кнопка "НАЧАТЬ МИССИЮ"
-    // и переходы состояний), чтобы она не играла раньше, чем пользователь
-    // реально нажал старт (даже если первый тап был по другой кнопке меню).
+    // Музыкальные <audio>-элементы здесь НЕ создаём: их запускает либо явный
+    // preloadMusic() (вызывает UIManager, когда все картинки интерфейса уже
+    // точно загружены — чтобы тяжёлые mp3 не конкурировали с ними за сеть),
+    // либо, как страховка, сам playMainMusic()/playDeathMusic() при первом
+    // реальном воспроизведении.
   }
+
+  // Явный публичный вызов — начать буферизацию музыки ЗАРАНЕЕ (не дожидаясь
+  // клика/пуска трека), но только когда это безопасно по времени (см. выше).
+  function preloadMusic() { _initMusicElements(); }
 
   function _initMusicElements() {
     if (mainMusicEl) return;
@@ -58,21 +62,11 @@ const AudioFX = (() => {
     deathMusicEl.setAttribute('fetchpriority', 'low');
   }
 
-  // Создаём <audio>-элементы и запускаем их буферизацию заранее (не дожидаясь
-  // клика) — конструктор Audio()/preload='auto' НЕ требует пользовательского
-  // жеста (запрещён только сам .play()). Так к моменту нажатия "НАЧАТЬ МИССИЮ"
-  // трек уже в основном закачан и звук стартует мгновенно.
-  // ВАЖНО: запускаем это с небольшой отсрочкой (не в самый первый момент
-  // разбора скрипта) и с fetchpriority='low' — иначе 9МБ аудио, стартуя
-  // раньше самого UIManager.init(), перехватывают сетевые слоты и заметно
-  // замедляют загрузку мелких картинок интерфейса (экран паузы и т.п.),
-  // из-за чего они долго показывают "ЗАГРУЗКА…" поверх уже кликабельных
-  // (но ещё не отрисованных) кнопок.
-  if (window.requestIdleCallback) {
-    requestIdleCallback(_initMusicElements, { timeout: 1500 });
-  } else {
-    setTimeout(_initMusicElements, 300);
-  }
+  // Буферизация музыки запускается ЯВНО извне через preloadMusic() —
+  // вызывает UIManager, как только все картинки интерфейса точно загружены
+  // (см. ui_manager.js init()). Так тяжёлые mp3 никогда не конкурируют за
+  // сеть с мелкими экранами (пауза/настройки), которые должны быть готовы
+  // мгновенно по первому клику.
 
   function _fade(el, from, to, ms) {
     if (!el) return;
@@ -200,6 +194,6 @@ const AudioFX = (() => {
   function getMusic()   { return musicOn; }
   function unlock()     { _init(); if (ctx && ctx.state === 'suspended') ctx.resume(); }
 
-  return { play, setVolume, getVolume, pause, resume, vibrate, setVibro, getVibro, setSfx, getSfx, setMusic, getMusic, unlock, playMainMusic, playDeathMusic };
+  return { play, setVolume, getVolume, pause, resume, vibrate, setVibro, getVibro, setSfx, getSfx, setMusic, getMusic, unlock, playMainMusic, playDeathMusic, preloadMusic };
 
 })();

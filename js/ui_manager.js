@@ -72,9 +72,18 @@ const UIManager = (() => {
   function init() {
     const names = ['title_screen', 'pause_screen', 'settings_screen', 'game_over_screen', 'briefing_screen', 'records_screen', 'pause_button'];
     let loaded = 0;
-    names.forEach(n => _loadScreen(n, () => { loaded++; if (loaded === names.length) ready = true; }));
+    names.forEach(n => _loadScreen(n, () => {
+      loaded++;
+      if (loaded === names.length) {
+        ready = true;
+        // Музыку начинаем тянуть ТОЛЬКО теперь, когда все UI-картинки точно
+        // договорились — иначе тяжёлый mp3 конкурирует за сеть с мелкими
+        // экранами (пауза/настройки) и те могут зависать в "ЗАГРУЗКА…".
+        if (typeof AudioFX !== 'undefined' && AudioFX.preloadMusic) AudioFX.preloadMusic();
+      }
+    }));
 
-    // Иконка звука на титульном экране (не критична для геймплея — без ретраев)
+    // Иконка звука на титульном экране (не критична для геймплея)
     ['sound_on', 'sound_off'].forEach(n => {
       const img = new Image();
       img.src = 'assets/ui_designs/' + n + '.png?v=' + UI_ASSET_V;
@@ -82,29 +91,22 @@ const UIManager = (() => {
     });
   }
 
-  // Загружает один экран с автоповтором, если картинка "зависла" (не onload
-  // и не onerror за STALL_MS) — покрывает единичные сетевые сбои/обрывы,
-  // из-за которых экран мог показывать "ЗАГРУЗКА…" бесконечно.
-  const STALL_MS = 4000;
-  const MAX_RETRIES = 3;
-  function _loadScreen(n, onSettled, attempt = 0) {
+  // Загружает один экран интерфейса. Без агрессивных повторов — параллельный
+  // повторный запрос того же файла только добавляет конкуренции за сеть и
+  // может УХУДШИТЬ зависание вместо того чтобы его вылечить. Один разумный
+  // таймаут + диагностика в консоль для отладки на реальном устройстве.
+  const STALL_MS = 8000;
+  function _loadScreen(n, onSettled) {
     const img = new Image();
     let settled = false;
     const t0 = performance.now();
     const stallTimer = setTimeout(() => {
       if (settled) return;
-      console.warn(`[UI] "${n}" не загрузился за ${STALL_MS}мс (попытка ${attempt + 1}/${MAX_RETRIES + 1}), повтор…`);
-      settled = true;
-      if (attempt < MAX_RETRIES) {
-        _loadScreen(n, onSettled, attempt + 1);
-      } else {
-        console.error(`[UI] "${n}" так и не загрузился после ${MAX_RETRIES + 1} попыток`);
-        onSettled();
-      }
+      console.warn(`[UI] "${n}" всё ещё не загрузился спустя ${STALL_MS}мс — жду дальше, не переотправляю запрос`);
     }, STALL_MS);
 
     img.onload = () => {
-      if (settled) return; // пришёл ответ уже после ретрая — игнорируем дубль
+      if (settled) return;
       settled = true;
       clearTimeout(stallTimer);
       console.log(`[UI] "${n}" загружен за ${Math.round(performance.now() - t0)}мс`);
@@ -114,16 +116,10 @@ const UIManager = (() => {
       if (settled) return;
       settled = true;
       clearTimeout(stallTimer);
-      console.warn(`[UI] ошибка загрузки "${n}" (попытка ${attempt + 1}/${MAX_RETRIES + 1})`);
-      if (attempt < MAX_RETRIES) {
-        _loadScreen(n, onSettled, attempt + 1);
-      } else {
-        onSettled();
-      }
+      console.warn(`[UI] ошибка загрузки "${n}"`);
+      onSettled();
     };
-    // cache-bust только при повторной попытке (attempt>0) — обходит потенциально
-    // застрявшую/битую версию в кэше браузера, не заставляя качать заново при каждом визите
-    img.src = 'assets/ui_designs/' + n + '.webp' + (attempt > 0 ? `?retry=${Date.now()}` : `?v=${UI_ASSET_V}`);
+    img.src = 'assets/ui_designs/' + n + '.webp?v=' + UI_ASSET_V;
     screens[n] = img;
   }
 
