@@ -19,6 +19,7 @@ const UIManager = (() => {
 
   let state = STATE.MENU;
   const screens = {};   // name -> Image
+  const soundIcons = {}; // 'sound_on'/'sound_off' -> Image
   let ready = false;    // загружены ли UI-картинки
 
   // ---------- Кнопки (хит-зоны) ----------
@@ -28,6 +29,7 @@ const UIManager = (() => {
     menu: [
       { id: 'start',    x: 100, y: 468, w: 280, h: 62 },  // НАЧАТЬ МИССИЮ
       { id: 'settings', x: 355, y: 68,  w: 110, h: 34 },  // НАСТРОЙКИ (верх справа)
+      { id: 'mute',     x: 8,   y: 10,  w: 41,  h: 41 },  // иконка звука (верх слева)
     ],
     // Пауза (pause_screen.png): 5 кнопок в панели
     paused: [  // макет PAUSE_SCREEN v2 от 13.07.2026 (детект по краям кнопок)
@@ -63,16 +65,66 @@ const UIManager = (() => {
   };
 
   // ---------- Загрузка ----------
+  // Версия для cache-bust картинок (синхронизировать с ?v= в index.html при каждом деплое,
+  // затрагивающем assets/ui_designs) — исключает залипание старой/битой копии в кэше браузера.
+  const UI_ASSET_V = '20260909a';
+
   function init() {
     const names = ['title_screen', 'pause_screen', 'settings_screen', 'game_over_screen', 'briefing_screen', 'records_screen', 'pause_button'];
     let loaded = 0;
-    names.forEach(n => {
+    names.forEach(n => _loadScreen(n, () => { loaded++; if (loaded === names.length) ready = true; }));
+
+    // Иконка звука на титульном экране (не критична для геймплея — без ретраев)
+    ['sound_on', 'sound_off'].forEach(n => {
       const img = new Image();
-      img.onload = () => { loaded++; if (loaded === names.length) ready = true; };
-      img.onerror = () => { loaded++; console.warn('[UI] не загружен:', n); };
-      img.src = 'assets/ui_designs/' + n + '.webp';
-      screens[n] = img;
+      img.src = 'assets/ui_designs/' + n + '.png?v=' + UI_ASSET_V;
+      soundIcons[n] = img;
     });
+  }
+
+  // Загружает один экран с автоповтором, если картинка "зависла" (не onload
+  // и не onerror за STALL_MS) — покрывает единичные сетевые сбои/обрывы,
+  // из-за которых экран мог показывать "ЗАГРУЗКА…" бесконечно.
+  const STALL_MS = 4000;
+  const MAX_RETRIES = 3;
+  function _loadScreen(n, onSettled, attempt = 0) {
+    const img = new Image();
+    let settled = false;
+    const t0 = performance.now();
+    const stallTimer = setTimeout(() => {
+      if (settled) return;
+      console.warn(`[UI] "${n}" не загрузился за ${STALL_MS}мс (попытка ${attempt + 1}/${MAX_RETRIES + 1}), повтор…`);
+      settled = true;
+      if (attempt < MAX_RETRIES) {
+        _loadScreen(n, onSettled, attempt + 1);
+      } else {
+        console.error(`[UI] "${n}" так и не загрузился после ${MAX_RETRIES + 1} попыток`);
+        onSettled();
+      }
+    }, STALL_MS);
+
+    img.onload = () => {
+      if (settled) return; // пришёл ответ уже после ретрая — игнорируем дубль
+      settled = true;
+      clearTimeout(stallTimer);
+      console.log(`[UI] "${n}" загружен за ${Math.round(performance.now() - t0)}мс`);
+      onSettled();
+    };
+    img.onerror = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(stallTimer);
+      console.warn(`[UI] ошибка загрузки "${n}" (попытка ${attempt + 1}/${MAX_RETRIES + 1})`);
+      if (attempt < MAX_RETRIES) {
+        _loadScreen(n, onSettled, attempt + 1);
+      } else {
+        onSettled();
+      }
+    };
+    // cache-bust только при повторной попытке (attempt>0) — обходит потенциально
+    // застрявшую/битую версию в кэше браузера, не заставляя качать заново при каждом визите
+    img.src = 'assets/ui_designs/' + n + '.webp' + (attempt > 0 ? `?retry=${Date.now()}` : `?v=${UI_ASSET_V}`);
+    screens[n] = img;
   }
 
   // ---------- Состояния ----------
@@ -93,7 +145,7 @@ const UIManager = (() => {
   function draw(ctx, dt) {
     switch (state) {
       case STATE.MENU:
-        _full(ctx, 'title_screen'); break;
+        _full(ctx, 'title_screen'); _drawMuteIcon(ctx); break;
       case STATE.PAUSED:
         _overlay(ctx); _full(ctx, 'pause_screen'); break;
       case STATE.SETTINGS:
@@ -196,8 +248,10 @@ const UIManager = (() => {
 
   // Живые ползунки поверх трека нового макета (seting.png, 08.09.2026).
   // Трек и подписи ON/OFF запечены в фон — JS двигает только сам кружок-ползунок.
-  // Координаты вымерены по вставленному макету (480×854):
-  const TOGGLE_TRACK = { xLeft: 302, xRight: 372, onX: 320, offX: 354, r: 8 };
+  // Координаты перевымерены точным пиксельным сканом по факту (08.09.2026):
+  // рамка трека сверху/снизу = y 235/260 (music), 304/329 (sfx), 372/397 (vibro) →
+  // истинный центр 247.5 / 316.5 / 384.5 (было смещено на 3-4px выше — задевало рамку).
+  const TOGGLE_TRACK = { xLeft: 302, xRight: 372, onX: 320, offX: 354, r: 7 };
   const TOGGLE_ANIM_DURATION = 0.18;
 
   function _toggleKnobX(id, on) {
@@ -210,6 +264,17 @@ const UIManager = (() => {
     return targetX;
   }
 
+  function _isMuted() {
+    return !AudioFX.getMusic() && !AudioFX.getSfx();
+  }
+
+  function _drawMuteIcon(ctx) {
+    const img = soundIcons[_isMuted() ? 'sound_off' : 'sound_on'];
+    if (img && img.complete && img.naturalWidth) {
+      ctx.drawImage(img, 8, 10, 41, 41);
+    }
+  }
+
   function _drawSettingsExtras(ctx, dt) {
     if (_resetArm > 0) _resetArm = Math.max(0, _resetArm - (dt || 0));
     if (_toggleAnim) {
@@ -217,24 +282,26 @@ const UIManager = (() => {
       if (_toggleAnim.t <= 0) _toggleAnim = null;
     }
     const rows = [
-      [244, 'music', AudioFX.getMusic()],
-      [311, 'sfx',   AudioFX.getSfx()],
-      [380, 'vibro', AudioFX.getVibro()],
+      [247, 'music', AudioFX.getMusic()],
+      [316, 'sfx',   AudioFX.getSfx()],
+      [384, 'vibro', AudioFX.getVibro()],
     ];
     ctx.save();
     for (const [cy, id, on] of rows) {
       // Закрасить ТОЛЬКО внутреннюю часть трека (между рамками) фоновым тёмным
       // цветом — стирает запечённый в макете дефолтный кружок, саму рамку
       // трека и подписи ON/OFF не трогаем, они остаются частью картинки.
+      // Высота залито чуть меньше внутреннего зазора рамки (25px), чтобы
+      // не задевать саму рамку, но с запасом перекрыть исходный кружок макета.
       ctx.fillStyle = '#000c14';
       ctx.beginPath();
-      ctx.roundRect(TOGGLE_TRACK.xLeft + 3, cy - 10, (TOGGLE_TRACK.xRight - TOGGLE_TRACK.xLeft) - 6, 20, 10);
+      ctx.roundRect(TOGGLE_TRACK.xLeft + 3, cy - 10, (TOGGLE_TRACK.xRight - TOGGLE_TRACK.xLeft) - 6, 20, 9);
       ctx.fill();
 
       const kx = _toggleKnobX(id, on);
       ctx.save();
       ctx.shadowColor = 'rgba(80,220,255,0.95)';
-      ctx.shadowBlur = 9;
+      ctx.shadowBlur = 7;
       ctx.fillStyle = '#eafcff';
       ctx.beginPath(); ctx.arc(kx, cy, TOGGLE_TRACK.r, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
@@ -256,6 +323,22 @@ const UIManager = (() => {
     if (img && img.complete && img.naturalWidth) ctx.drawImage(img, 8, 12, 40, 40); // слева от панели O₂, поднята на 14px (~5мм)
   }
 
+  // Соответствие состояния UI и файла его фоновой картинки (для проверки готовности перед приёмом кликов)
+  const STATE_IMAGE = {
+    [STATE.MENU]:      'title_screen',
+    [STATE.PAUSED]:    'pause_screen',
+    [STATE.SETTINGS]:  'settings_screen',
+    [STATE.HOWTO]:     'briefing_screen',
+    [STATE.RECORDS]:   'records_screen',
+    [STATE.GAME_OVER]: 'game_over_screen',
+  };
+  function _stateImageReady() {
+    const name = STATE_IMAGE[state];
+    if (!name) return true; // PLAYING/REWARD_AD не завязаны на статичную картинку
+    const img = screens[name];
+    return !!(img && img.complete && img.naturalWidth);
+  }
+
   // ---------- Клики ----------
   // Возвращает true, если клик обработан UI (игре его не передавать)
   function handleClick(x, y) {
@@ -270,6 +353,11 @@ const UIManager = (() => {
       }
       return false; // остальные клики — игре
     }
+
+    // Картинка текущего экрана ещё грузится ("ЗАГРУЗКА…") — кнопки на ней
+    // визуально не видны, поэтому клики по их координатам не засчитываем,
+    // чтобы не срабатывали "невидимые" кнопки до появления самой заставки.
+    if (!_stateImageReady()) return true;
 
     const list = BUTTONS[state] || [];
     for (const b of list) {
@@ -315,6 +403,12 @@ const UIManager = (() => {
         _prevState = state;
         setState(STATE.HOWTO);
         break;
+      case 'mute': {
+        const willMute = !_isMuted();
+        AudioFX.setMusic(!willMute);
+        AudioFX.setSfx(!willMute);
+        break;
+      }
       case 'records':
         _prevState = state;
         setState(STATE.RECORDS);

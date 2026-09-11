@@ -50,19 +50,29 @@ const AudioFX = (() => {
     mainMusicEl.loop = true;
     mainMusicEl.preload = 'auto';
     mainMusicEl.volume = volume;
+    mainMusicEl.setAttribute('fetchpriority', 'low'); // не мешать загрузке UI-картинок (пауза/настройки и т.п.)
     deathMusicEl = new Audio(MUSIC_DEATH);
     deathMusicEl.loop = true;
     deathMusicEl.preload = 'auto';
     deathMusicEl.volume = volume;
+    deathMusicEl.setAttribute('fetchpriority', 'low');
   }
 
-  // Создаём <audio>-элементы и запускаем их буферизацию СРАЗУ при загрузке
-  // страницы (не дожидаясь клика) — конструктор Audio()/preload='auto' НЕ
-  // требует пользовательского жеста (запрещён только сам .play()). Так к
-  // моменту нажатия "НАЧАТЬ МИССИЮ" трек уже в основном закачан и звук
-  // стартует мгновенно, а не через несколько секунд одновременно со
-  // спавном/движением астронавта.
-  _initMusicElements();
+  // Создаём <audio>-элементы и запускаем их буферизацию заранее (не дожидаясь
+  // клика) — конструктор Audio()/preload='auto' НЕ требует пользовательского
+  // жеста (запрещён только сам .play()). Так к моменту нажатия "НАЧАТЬ МИССИЮ"
+  // трек уже в основном закачан и звук стартует мгновенно.
+  // ВАЖНО: запускаем это с небольшой отсрочкой (не в самый первый момент
+  // разбора скрипта) и с fetchpriority='low' — иначе 9МБ аудио, стартуя
+  // раньше самого UIManager.init(), перехватывают сетевые слоты и заметно
+  // замедляют загрузку мелких картинок интерфейса (экран паузы и т.п.),
+  // из-за чего они долго показывают "ЗАГРУЗКА…" поверх уже кликабельных
+  // (но ещё не отрисованных) кнопок.
+  if (window.requestIdleCallback) {
+    requestIdleCallback(_initMusicElements, { timeout: 1500 });
+  } else {
+    setTimeout(_initMusicElements, 300);
+  }
 
   function _fade(el, from, to, ms) {
     if (!el) return;

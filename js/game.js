@@ -28,6 +28,7 @@ const Game = (() => {
     Tentacles.init();
     Oxygen.init();
     Crystals.init();
+    Astronaut.init();   // задаёт стартовую позицию (платформа 1), иначе рендерится в (0,0) до первого спавна
     Input.init();
     UIManager.init();
 

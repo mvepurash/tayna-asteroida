@@ -535,7 +535,7 @@ const Renderer = (() => {
     const t = performance.now() / 1000;
     const fade = Math.min(1, _glowT / 0.20);           // плавное затухание послесвечения
     const p = (0.55 + 0.45 * Math.sin(t * 9)) * fade;  // пульс ~1.4 Гц
-    const dx = mirror ? 24 : -24, dy = -33;            // кончик бура на спрайтах mine_01..04
+    const dx = mirror ? 24 : -24, dy = -21;            // кончик бура (сдвинуто на ~5мм/12px вниз по инструменту — было -33, задевало середину)
     const gx = x + dx, gy = y + dy;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
