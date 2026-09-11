@@ -265,10 +265,12 @@ const UIManager = (() => {
   }
 
   function _drawMuteIcon(ctx) {
-    const img = soundIcons[_isMuted() ? 'sound_off' : 'sound_on'];
-    if (img && img.complete && img.naturalWidth) {
-      ctx.drawImage(img, 8, 10, 41, 41);
-    }
+    try {
+      const img = soundIcons[_isMuted() ? 'sound_off' : 'sound_on'];
+      if (img && img.complete && img.naturalWidth) {
+        ctx.drawImage(img, 8, 10, 41, 41);
+      }
+    } catch (e) { console.warn('[UI] _drawMuteIcon:', e); }
   }
 
   function _drawSettingsExtras(ctx, dt) {

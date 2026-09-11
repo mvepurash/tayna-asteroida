@@ -93,7 +93,7 @@ const Game = (() => {
     // В меню/паузе/настройках/game over — геймплей стоит, только рендер + UI
     if (!UIManager.isPlaying()) {
       try { Renderer.draw(0); } catch(e) {}
-      UIManager.draw(_ctx(), dt);
+      try { UIManager.draw(_ctx(), dt); } catch(e) { console.error("[UIManager.draw]", e); }
       requestAnimationFrame(loop);
       return;
     }
@@ -108,7 +108,7 @@ const Game = (() => {
           UIManager.setState(UIManager.STATE.GAME_OVER);
           AudioFX.playDeathMusic();
           Renderer.draw(0);
-          UIManager.draw(_ctx(), dt);
+          try { UIManager.draw(_ctx(), dt); } catch(e) { console.error("[UIManager.draw]", e); }
           requestAnimationFrame(loop);
           return;
         }
@@ -173,7 +173,7 @@ const Game = (() => {
     } catch(e) {
       console.error('[Game] Renderer.draw error:', e.message);
     }
-    UIManager.draw(_ctx(), dt);  // кнопка паузы поверх игры
+    try { UIManager.draw(_ctx(), dt); } catch(e) { console.error("[UIManager.draw]", e); }  // кнопка паузы поверх игры
     requestAnimationFrame(loop);
   }
 
