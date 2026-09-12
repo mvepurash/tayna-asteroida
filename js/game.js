@@ -85,7 +85,11 @@ const Game = (() => {
   }
 
   function loop(timestamp) {
-    if (!running) { requestAnimationFrame(loop); return; }
+    // running здесь НЕ проверяем: рендер (меню/пауза/настройки/геймплей)
+    // должен продолжаться всегда — какая часть логики обновляется,
+    // решает исключительно UIManager.isPlaying() чуть ниже. Раньше pause()
+    // выставлял running=false, и эта проверка обрывала вообще любую
+    // отрисовку, включая сам экран паузы — отсюда "заставка не грузится".
 
     const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
     lastTime = timestamp;
@@ -219,8 +223,10 @@ const Game = (() => {
 
   function pause() {
     AudioFX.pause();
-    running = false;
     Oxygen.pause();
+    // ВАЖНО: running НЕ трогаем — иначе loop() перестаёт вызывать
+    // UIManager.draw() вообще (см. ниже), и экран паузы никогда не
+    // отрисовывается, хотя состояние внутри уже переключилось.
   }
 
   function resume() {
