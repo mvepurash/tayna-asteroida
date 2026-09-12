@@ -160,25 +160,46 @@ const UIManager = (() => {
     _drawFlash(ctx, dt || 0);
   }
 
-  // Эффект нажатия: затемнение + неоновая обводка зоны кнопки на ~140мс
+  // Эффект нажатия: кнопка на ~160мс слегка "вжимается" в свою же рамку
+  // (те же пиксели перерисовываются чуть меньше и по центру исходной
+  // зоны — рамка/бевел кнопки в артах уже даёт иллюзию вдавливания)
+  // + короткая яркая вспышка по контуру. Работает без отдельных спрайтов:
+  // берём кроп из уже отрисованной картинки экрана.
+  const FLASH_DURATION = 0.16;
   function _drawFlash(ctx, dt) {
     if (!_flash) return;
     _flash.t -= dt;
     if (_flash.t <= 0) { _flash = null; return; }
-    const a = Math.min(1, _flash.t / 0.18);
+    const t = _flash.t / FLASH_DURATION;      // 1 -> 0
+    const p = 1 - t;                           // 0 -> 1 (прогресс анимации)
+    const squeeze = p < 0.4 ? 1 - 0.08 * (p / 0.4) : 0.92 + 0.08 * ((p - 0.4) / 0.6);
+    const { x, y, w, h, img, sx, sy, sw, sh } = _flash;
+    const cx = x + w / 2, cy = y + h / 2;
+    const dw = w * squeeze, dh = h * squeeze;
+
     ctx.save();
-    ctx.fillStyle = `rgba(0,0,0,${0.25 * a})`;
-    ctx.fillRect(_flash.x, _flash.y, _flash.w, _flash.h);
-    ctx.strokeStyle = `rgba(0,212,255,${0.9 * a})`;
-    ctx.lineWidth = 4;
-    ctx.shadowColor = 'rgba(0,212,255,0.9)';
-    ctx.shadowBlur = 18 * a;
-    ctx.strokeRect(_flash.x + 2, _flash.y + 2, _flash.w - 4, _flash.h - 4);
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = `rgba(255,255,255,${0.7 * a})`;
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(_flash.x + 5, _flash.y + 5, _flash.w - 10, _flash.h - 10);
+    if (img && img.complete && img.naturalWidth) {
+      ctx.drawImage(img, sx, sy, sw, sh, cx - dw / 2, cy - dh / 2, dw, dh);
+    }
+    const a = t;
+    ctx.strokeStyle = `rgba(255,255,255,${0.85 * a})`;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(120,220,255,0.95)';
+    ctx.shadowBlur = 16 * a;
+    ctx.strokeRect(cx - dw / 2 + 1, cy - dh / 2 + 1, dw - 2, dh - 2);
     ctx.restore();
+  }
+
+  // Готовит объект _flash с корректными исходными координатами кропа:
+  // для больших экранов (screens[name], залиты 1:1 на весь канвас 480×854)
+  // src-координаты совпадают с координатами кнопки на канвасе; для мелких
+  // отдельных иконок (pause_button и т.п.) исходное изображение имеет
+  // свой натуральный размер — кропаем его целиком.
+  function _makeFlash(x, y, w, h, img, opts) {
+    if (opts && opts.fullImage) {
+      return { x, y, w, h, img, sx: 0, sy: 0, sw: img.naturalWidth, sh: img.naturalHeight, t: FLASH_DURATION };
+    }
+    return { x, y, w, h, img, sx: x, sy: y, sw: w, sh: h, t: FLASH_DURATION };
   }
 
   // Заглушка рекламы: чёрный экран, "РЕКЛАМА", отсчёт. По истечении — +1 жизнь.
@@ -343,7 +364,7 @@ const UIManager = (() => {
     if (state === STATE.PLAYING) {
       // кнопка паузы 15..55
       if (x >= 4 && x <= 56 && y >= 8 && y <= 56) {
-        _flash = { x: 8, y: 12, w: 40, h: 40, t: 0.25 };
+        _flash = _makeFlash(8, 12, 40, 40, screens.pause_button, { fullImage: true });
         AudioFX.play('tap');
         setState(STATE.PAUSED);
         Game.pause();
@@ -370,8 +391,15 @@ const UIManager = (() => {
                        : AudioFX.getVibro();
           _toggleAnim = { id: b.id, fromOn, t: TOGGLE_ANIM_DURATION };
           AudioFX.play('tap');
+        } else if (b.id === 'mute') {
+          // Иконка звука — отдельная картинка (sound_on/off), не часть
+          // общего фона экрана, кропаем её саму целиком
+          const muteImg = soundIcons[_isMuted() ? 'sound_off' : 'sound_on'];
+          _flash = _makeFlash(b.x, b.y, b.w, b.h, muteImg, { fullImage: true });
+          AudioFX.play('tap');
         } else if (b.w < 480) {
-          _flash = { x: b.x, y: b.y, w: b.w, h: b.h, t: 0.25 }; AudioFX.play('tap');
+          _flash = _makeFlash(b.x, b.y, b.w, b.h, screens[STATE_IMAGE[state]]);
+          AudioFX.play('tap');
         } // полноэкранные back-зоны не подсвечиваем
         _onButton(b.id);
         return true;
