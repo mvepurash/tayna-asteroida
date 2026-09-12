@@ -67,7 +67,7 @@ const UIManager = (() => {
   // ---------- Загрузка ----------
   // Версия для cache-bust картинок (синхронизировать с ?v= в index.html при каждом деплое,
   // затрагивающем assets/ui_designs) — исключает залипание старой/битой копии в кэше браузера.
-  const UI_ASSET_V = '20260909a';
+  const UI_ASSET_V = '20260912a';
 
   function init() {
     const names = ['title_screen', 'pause_screen', 'settings_screen', 'game_over_screen', 'briefing_screen', 'records_screen', 'pause_button'];
