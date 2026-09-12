@@ -29,7 +29,7 @@ const UIManager = (() => {
     menu: [
       { id: 'start',    x: 100, y: 468, w: 280, h: 62 },  // НАЧАТЬ МИССИЮ
       { id: 'settings', x: 355, y: 68,  w: 110, h: 34 },  // НАСТРОЙКИ (верх справа)
-      { id: 'mute',     x: 8,   y: 10,  w: 46,  h: 46 },  // иконка звука (верх слева; лево/верх заякорены, право/низ +5px)
+      { id: 'mute',     x: 8,   y: 10,  w: 48,  h: 48 },  // иконка звука (верх слева заякорены; +1мм ещё раз, было 46)
     ],
     // Пауза (pause_screen.png): 5 кнопок в панели
     paused: [  // макет PAUSE_SCREEN v2 от 13.07.2026 (детект по краям кнопок)
@@ -268,7 +268,7 @@ const UIManager = (() => {
     try {
       const img = soundIcons[_isMuted() ? 'sound_off' : 'sound_on'];
       if (img && img.complete && img.naturalWidth) {
-        ctx.drawImage(img, 8, 10, 46, 46);
+        ctx.drawImage(img, 8, 10, 48, 48);
       }
     } catch (e) { console.warn('[UI] _drawMuteIcon:', e); }
   }
