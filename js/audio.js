@@ -7,6 +7,7 @@
 const AudioFX = (() => {
 
   const FILES = ['tap','mine','deliver','warning','death','spawn','reward','panic'];
+  const SFX_ASSET_V = '20260913a'; // менять при замене любого файла в assets/sfx/
   const MUSIC_MAIN  = 'assets/music/asteroid_ambient_01.mp3';  // фоновая музыка игры
   const MUSIC_DEATH = 'assets/music/asteroid_ambient_02.mp3';  // музыка экрана Game Over
   const MUSIC_FADE_MS = 300;
@@ -31,7 +32,7 @@ const AudioFX = (() => {
     master.gain.value = volume;
     master.connect(ctx.destination);
     FILES.forEach(n => {
-      fetch('assets/sfx/' + n + '.wav')
+      fetch('assets/sfx/' + n + '.wav?v=' + SFX_ASSET_V)
         .then(r => r.arrayBuffer())
         .then(ab => ctx.decodeAudioData(ab))
         .then(b => { buf[n] = b; })
