@@ -85,7 +85,10 @@ const HUD = (() => {
 
   function draw(ctx, dt) {
     blinkTimer += dt || 0;
-    if (blinkTimer > 0.4) { blinkTimer = 0; blinkOn = !blinkOn; }
+    // Обычное мигание раз в 0.4с (ratio<=25%), в последние 15с кислорода
+    // (Oxygen.isPanicZone) — учащаем до 0.15с, вместе со звуковым сигналом паники
+    const blinkRate = (typeof Oxygen !== 'undefined' && Oxygen.isPanicZone && Oxygen.isPanicZone()) ? 0.15 : 0.4;
+    if (blinkTimer > blinkRate) { blinkTimer = 0; blinkOn = !blinkOn; }
 
     _drawTopPanel(ctx);
     _drawBottomPanel(ctx);

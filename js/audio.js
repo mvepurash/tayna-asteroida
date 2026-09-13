@@ -6,7 +6,7 @@
 
 const AudioFX = (() => {
 
-  const FILES = ['tap','mine','deliver','warning','death','spawn','reward'];
+  const FILES = ['tap','mine','deliver','warning','death','spawn','reward','panic'];
   const MUSIC_MAIN  = 'assets/music/asteroid_ambient_01.mp3';  // фоновая музыка игры
   const MUSIC_DEATH = 'assets/music/asteroid_ambient_02.mp3';  // музыка экрана Game Over
   const MUSIC_FADE_MS = 300;

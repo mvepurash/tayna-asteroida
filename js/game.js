@@ -27,6 +27,7 @@ const Game = (() => {
     Crew.init();
     Tentacles.init();
     Oxygen.init();
+    Oxygen.setOnPanic(() => AudioFX.play('panic')); // тревожный сигнал на 15 сек кислорода
     Crystals.init();
     Astronaut.init();   // задаёт стартовую позицию (платформа 1), иначе рендерится в (0,0) до первого спавна
     Input.init();
@@ -85,6 +86,48 @@ const Game = (() => {
   }
 
   function loop(timestamp) {
+    _loopInner(timestamp);
+    if (DEBUG_GRID) { try { _drawDebugGrid(); } catch (e) {} }
+  }
+
+  // Временная калибровочная сетка: добавь ?grid=1 к адресу страницы, чтобы
+  // увидеть координаты поверх любого экрана (пиксели канваса 480×854) —
+  // помогает быстро сверить/поправить зоны кнопок в BUTTONS. Убрать после
+  // финальной калибровки (или просто не использовать параметр — по
+  // умолчанию сетка выключена и ни на что не влияет).
+  const DEBUG_GRID = new URLSearchParams(location.search).get('grid') === '1';
+  function _drawDebugGrid() {
+    const ctx = _ctx();
+    const STEP = 20;
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= CONFIG.CANVAS_W; x += STEP) {
+      const major = x % 100 === 0;
+      ctx.strokeStyle = major ? 'rgba(255,0,255,0.55)' : 'rgba(255,0,255,0.18)';
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CONFIG.CANVAS_H); ctx.stroke();
+    }
+    for (let y = 0; y <= CONFIG.CANVAS_H; y += STEP) {
+      const major = y % 100 === 0;
+      ctx.strokeStyle = major ? 'rgba(255,0,255,0.55)' : 'rgba(255,0,255,0.18)';
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CONFIG.CANVAS_W, y); ctx.stroke();
+    }
+    ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = '#ff00ff';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    for (let x = 0; x <= CONFIG.CANVAS_W; x += 100) {
+      ctx.strokeText(String(x), x + 2, 11);
+      ctx.fillText(String(x), x + 2, 11);
+    }
+    for (let y = 0; y <= CONFIG.CANVAS_H; y += 100) {
+      if (y === 0) continue;
+      ctx.strokeText(String(y), 2, y + 9);
+      ctx.fillText(String(y), 2, y + 9);
+    }
+    ctx.restore();
+  }
+
+  function _loopInner(timestamp) {
     // running здесь НЕ проверяем: рендер (меню/пауза/настройки/геймплей)
     // должен продолжаться всегда — какая часть логики обновляется,
     // решает исключительно UIManager.isPlaying() чуть ниже. Раньше pause()

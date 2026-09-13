@@ -12,17 +12,24 @@ const Oxygen = (() => {
   let depleted = false;               // уже сработала смерть
   let paused   = false;               // во время паузы/рекламы
 
+  const PANIC_THRESHOLD = 15;         // сек — порог тревожного сигнала
+  let panicTriggered = false;         // одноразовый триггер (сброс при пополнении/старте)
+  let _onPanic = null;
+  function setOnPanic(cb) { _onPanic = cb; }
+
   // ---------- Публичное API ----------
 
   function init() {
     current  = max;
     depleted = false;
     paused   = false;
+    panicTriggered = false;
   }
 
   function reset() {
     current  = max;
     depleted = false;
+    panicTriggered = false;
   }
 
   function pause()  { paused = true;  }
@@ -37,6 +44,11 @@ const Oxygen = (() => {
     if (st === Astronaut.STATE.DEAD || st === Astronaut.STATE.SPAWNING) return;
 
     current -= dt;
+
+    if (!panicTriggered && current <= PANIC_THRESHOLD && current > 0) {
+      panicTriggered = true;
+      if (_onPanic) _onPanic();
+    }
 
     if (current <= 0) {
       current  = 0;
@@ -53,6 +65,7 @@ const Oxygen = (() => {
   function refill() {
     current  = max;
     depleted = false;
+    panicTriggered = false;
     console.log('[Oxygen] Кислород пополнен');
   }
 
@@ -63,6 +76,7 @@ const Oxygen = (() => {
   function getRatio()    { return current / max; }        // 0..1
   function getSeconds()  { return Math.ceil(current); }  // для HUD
   function isDepleted()  { return depleted; }
+  function isPanicZone() { return current <= PANIC_THRESHOLD && current > 0; } // последние 15с — усиленное мерцание
 
   // Уровень тревоги для HUD (цвет шкалы)
   // 0 = норма (синий), 1 = внимание (жёлтый), 2 = критично (красный)
@@ -85,7 +99,9 @@ const Oxygen = (() => {
     getRatio,
     getSeconds,
     isDepleted,
+    isPanicZone,
     getAlertLevel,
+    setOnPanic,
   };
 
 })();
