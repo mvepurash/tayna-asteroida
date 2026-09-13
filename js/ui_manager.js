@@ -166,6 +166,7 @@ const UIManager = (() => {
   // + короткая яркая вспышка по контуру. Работает без отдельных спрайтов:
   // берём кроп из уже отрисованной картинки экрана.
   const FLASH_DURATION = 0.16;
+  const PRESS_DELAY_MS = 120; // задержка действия после клика — даём вспышке доиграть на ТОМ ЖЕ экране
   function _drawFlash(ctx, dt) {
     if (!_flash) return;
     _flash.t -= dt;
@@ -358,16 +359,24 @@ const UIManager = (() => {
     return !!(img && img.complete && img.naturalWidth);
   }
 
+  let _actionPending = false; // блокирует повторный клик, пока предыдущее действие ждёт конца анимации нажатия
+
+  function _scheduleAction(fn) {
+    _actionPending = true;
+    setTimeout(() => { _actionPending = false; fn(); }, PRESS_DELAY_MS);
+  }
+
   // ---------- Клики ----------
   // Возвращает true, если клик обработан UI (игре его не передавать)
   function handleClick(x, y) {
+    if (_actionPending) return true; // предыдущее нажатие ещё доигрывает анимацию
+
     if (state === STATE.PLAYING) {
       // кнопка паузы 15..55
       if (x >= 4 && x <= 56 && y >= 8 && y <= 56) {
         _flash = _makeFlash(8, 12, 40, 40, screens.pause_button, { fullImage: true });
         AudioFX.play('tap');
-        setState(STATE.PAUSED);
-        Game.pause();
+        _scheduleAction(() => { setState(STATE.PAUSED); Game.pause(); });
         return true;
       }
       return false; // остальные клики — игре
@@ -391,17 +400,27 @@ const UIManager = (() => {
                        : AudioFX.getVibro();
           _toggleAnim = { id: b.id, fromOn, t: TOGGLE_ANIM_DURATION };
           AudioFX.play('tap');
+          _onButton(b.id); // остаёмся на том же экране — можно сразу
         } else if (b.id === 'mute') {
           // Иконка звука — отдельная картинка (sound_on/off), не часть
-          // общего фона экрана, кропаем её саму целиком
+          // общего фона экрана, кропаем её саму целиком. Экран не меняется,
+          // можно применять сразу же.
           const muteImg = soundIcons[_isMuted() ? 'sound_off' : 'sound_on'];
           _flash = _makeFlash(b.x, b.y, b.w, b.h, muteImg, { fullImage: true });
           AudioFX.play('tap');
+          _onButton(b.id);
         } else if (b.w < 480) {
           _flash = _makeFlash(b.x, b.y, b.w, b.h, screens[STATE_IMAGE[state]]);
           AudioFX.play('tap');
-        } // полноэкранные back-зоны не подсвечиваем
-        _onButton(b.id);
+          // ВАЖНО: действие (обычно смена экрана) откладываем на длительность
+          // анимации нажатия — иначе экран меняется МГНОВЕННО и вспышка
+          // рендерится уже поверх нового (другого) экрана, где её никто не
+          // видит. Так пользователь сначала видит нажатие, потом переход.
+          _scheduleAction(() => _onButton(b.id));
+        } else {
+          // полноэкранные back-зоны — без анимации, действие сразу
+          _onButton(b.id);
+        }
         return true;
       }
     }
