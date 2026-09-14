@@ -39,7 +39,7 @@ const UIManager = (() => {
       { id: 'howto',    x: 134, y: 479, w: 212, h: 59 },  // КАК ИГРАТЬ -> заставка ИНСТРУКТАЖ
       { id: 'records',  x: 134, y: 556, w: 212, h: 59 },  // РЕКОРДЫ -> заставка
       { id: 'to_menu',  x: 134, y: 633, w: 212, h: 58 },  // ВЫЙТИ В ГЛАВНОЕ МЕНЮ
-      { id: 'resume',   x: 325, y: 227, w: 35,  h: 35 },  // X (закрыть, внутри модалки сверху-справа)
+      { id: 'resume',   x: 331, y: 230, w: 26,  h: 38, pad: 8 },  // X (закрыть) — вертикальный прямоугольник, не квадрат; pad = запас для пальца
     ],
     // Настройки (settings_screen.png): пока только "назад"
     settings: [  // зоны сняты с макета settings_screen.png (16.07.2026)
@@ -192,7 +192,7 @@ const UIManager = (() => {
     // кнопках (мало своего цвета внутри, в отличие от золотой ПРОДОЛЖИТЬ)
     ctx.save();
     ctx.beginPath();
-    ctx.roundRect(cx - dw / 2, cy - dh / 2, dw, dh, Math.min(14, dh / 3));
+    ctx.roundRect(cx - dw / 2, cy - dh / 2, dw, dh, Math.min(14, dh / 3, dw / 3));
     ctx.clip();
     ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = `rgba(150,220,255,${0.45 * a})`;
@@ -206,7 +206,7 @@ const UIManager = (() => {
     // Скруглённые углы вместо прямых — большинство кнопок в артах имеют
     // скошенные/скруглённые углы, прямая strokeRect торчала за их пределы
     ctx.beginPath();
-    ctx.roundRect(cx - dw / 2 + 1, cy - dh / 2 + 1, dw - 2, dh - 2, Math.min(14, dh / 3));
+    ctx.roundRect(cx - dw / 2 + 1, cy - dh / 2 + 1, dw - 2, dh - 2, Math.min(14, dh / 3, dw / 3));
     ctx.stroke();
     ctx.restore();
   }
@@ -413,7 +413,10 @@ const UIManager = (() => {
 
     const list = BUTTONS[state] || [];
     for (const b of list) {
-      if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+      // pad (необязательный) расширяет ТОЛЬКО зону попадания, не подсветку —
+      // мелкие кнопки (крестик) удобно нажимать, но вспышка строго по контуру
+      const p = b.pad || 0;
+      if (x >= b.x - p && x <= b.x + b.w + p && y >= b.y - p && y <= b.y + b.h + p) {
         const isToggle = (b.id === 'music' || b.id === 'sfx' || b.id === 'vibro');
         if (isToggle) {
           // Тумблеры получают собственную анимацию скольжения ползунка
