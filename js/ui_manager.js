@@ -186,6 +186,18 @@ const UIManager = (() => {
       ctx.drawImage(img, sx, sy, sw, sh, cx - dw / 2, cy - dh / 2, dw, dh);
     }
     const a = t;
+    // Заливка светом поверх кнопки (composite 'lighter' — добавляет яркость,
+    // а не просто закрашивает) — без неё эффект почти не виден на тёмных
+    // кнопках (мало своего цвета внутри, в отличие от золотой ПРОДОЛЖИТЬ)
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(cx - dw / 2, cy - dh / 2, dw, dh, Math.min(14, dh / 3));
+    ctx.clip();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = `rgba(150,220,255,${0.45 * a})`;
+    ctx.fillRect(cx - dw / 2, cy - dh / 2, dw, dh);
+    ctx.restore();
+
     ctx.strokeStyle = `rgba(255,255,255,${0.85 * a})`;
     ctx.lineWidth = 2;
     ctx.shadowColor = 'rgba(120,220,255,0.95)';
