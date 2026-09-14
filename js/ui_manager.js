@@ -29,16 +29,16 @@ const UIManager = (() => {
     menu: [
       { id: 'start',    x: 100, y: 468, w: 280, h: 62 },  // НАЧАТЬ МИССИЮ
       { id: 'settings', x: 355, y: 68,  w: 110, h: 34 },  // НАСТРОЙКИ (верх справа)
-      { id: 'mute',     x: 8,   y: 10,  w: 50,  h: 50 },  // иконка звука (верх слева заякорены; +1мм ещё раз, было 48)
+      { id: 'mute',     x: 8,   y: 10,  w: 54,  h: 54 },  // иконка звука (верх слева заякорены; кроп по реальным границам спрайта — раньше растягивалась вместе с несимметричными пустыми полями внутри картинки, из-за чего визуально "уезжала" от левого края при увеличении)
     ],
     // Пауза (pause_screen.png): 5 кнопок в панели
-    paused: [  // перекалиброван по актуальному макету pause_screen.webp (13.09.2026)
-      { id: 'resume',   x: 110, y: 308, w: 260, h: 52 },  // ПРОДОЛЖИТЬ (оранжевая)
-      { id: 'settings', x: 110, y: 383, w: 260, h: 50 },  // НАСТРОЙКИ
-      { id: 'howto',    x: 110, y: 456, w: 260, h: 50 },  // КАК ИГРАТЬ -> заставка ИНСТРУКТАЖ
-      { id: 'records',  x: 110, y: 531, w: 260, h: 50 },  // РЕКОРДЫ -> заставка
-      { id: 'to_menu',  x: 110, y: 606, w: 260, h: 58 },  // ВЫЙТИ В ГЛАВНОЕ МЕНЮ
-      { id: 'resume',   x: 328, y: 222, w: 44,  h: 40 },  // X (закрыть, внутри модалки сверху-справа)
+    paused: [  // точная перекалибровка по пиксельному скану 15.09.2026 (была неточной на глаз)
+      { id: 'resume',   x: 134, y: 320, w: 211, h: 63 },  // ПРОДОЛЖИТЬ (оранжевая)
+      { id: 'settings', x: 115, y: 400, w: 250, h: 55 },  // НАСТРОЙКИ
+      { id: 'howto',    x: 115, y: 475, w: 250, h: 48 },  // КАК ИГРАТЬ -> заставка ИНСТРУКТАЖ
+      { id: 'records',  x: 115, y: 548, w: 250, h: 50 },  // РЕКОРДЫ -> заставка
+      { id: 'to_menu',  x: 115, y: 623, w: 250, h: 52 },  // ВЫЙТИ В ГЛАВНОЕ МЕНЮ
+      { id: 'resume',   x: 325, y: 227, w: 35,  h: 35 },  // X (закрыть, внутри модалки сверху-справа)
     ],
     // Настройки (settings_screen.png): пока только "назад"
     settings: [  // зоны сняты с макета settings_screen.png (16.07.2026)
@@ -190,7 +190,11 @@ const UIManager = (() => {
     ctx.lineWidth = 2;
     ctx.shadowColor = 'rgba(120,220,255,0.95)';
     ctx.shadowBlur = 16 * a;
-    ctx.strokeRect(cx - dw / 2 + 1, cy - dh / 2 + 1, dw - 2, dh - 2);
+    // Скруглённые углы вместо прямых — большинство кнопок в артах имеют
+    // скошенные/скруглённые углы, прямая strokeRect торчала за их пределы
+    ctx.beginPath();
+    ctx.roundRect(cx - dw / 2 + 1, cy - dh / 2 + 1, dw - 2, dh - 2, Math.min(14, dh / 3));
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -200,6 +204,10 @@ const UIManager = (() => {
   // отдельных иконок (pause_button и т.п.) исходное изображение имеет
   // свой натуральный размер — кропаем его целиком.
   function _makeFlash(x, y, w, h, img, opts) {
+    if (opts && opts.srcRect) {
+      const s = opts.srcRect;
+      return { x, y, w, h, img, sx: s.sx, sy: s.sy, sw: s.sw, sh: s.sh, t: FLASH_DURATION };
+    }
     if (opts && opts.fullImage) {
       return { x, y, w, h, img, sx: 0, sy: 0, sw: img.naturalWidth, sh: img.naturalHeight, t: FLASH_DURATION };
     }
@@ -293,7 +301,7 @@ const UIManager = (() => {
     try {
       const img = soundIcons[_isMuted() ? 'sound_off' : 'sound_on'];
       if (img && img.complete && img.naturalWidth) {
-        ctx.drawImage(img, 8, 10, 50, 50);
+        ctx.drawImage(img, 8, 10, 54, 54);
       }
     } catch (e) { console.warn('[UI] _drawMuteIcon:', e); }
   }
