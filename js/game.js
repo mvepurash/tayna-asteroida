@@ -113,7 +113,12 @@ const Game = (() => {
   // помогает быстро сверить/поправить зоны кнопок в BUTTONS. Убрать после
   // финальной калибровки (или просто не использовать параметр — по
   // умолчанию сетка выключена и ни на что не влияет).
-  const DEBUG_GRID = new URLSearchParams(location.search).get('grid') === '1';
+  // Калибровочная сетка: ?grid=1 в адресе. Инструмент разработки — на боевых
+  // площадках (Яндекс Игры и любой не-localhost хост) принудительно выключена,
+  // чтобы её нельзя было включить у игрока подбором параметра в URL.
+  const _isDevHost = ['localhost', '127.0.0.1', ''].includes(location.hostname)
+                  || location.hostname.endsWith('.github.io');
+  const DEBUG_GRID = _isDevHost && new URLSearchParams(location.search).get('grid') === '1';
   function _drawDebugGrid() {
     const ctx = _ctx();
     const STEP = 20;
