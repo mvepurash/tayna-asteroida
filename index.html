@@ -55,6 +55,11 @@ html, body {
   <div id="game-wrapper" style="background:#000;">
     <canvas id="game-canvas" style="background:#0a0a12;display:block;"></canvas>
   </div>
+  <!-- Yandex Games SDK. Загружается ПЕРЕД игровыми скриптами: game.js на
+       событии load проверяет typeof YaGames и инициализирует ysdk.
+       Без этого тега SDK никогда не появлялся, и игра всегда работала в
+       fallback-режиме (реклама/LoadingAPI/лидерборды недоступны). -->
+  <script src="https://yandex.ru/games/sdk/v2"></script>
     <script src="js/config.js?v=b96327e"></script>
   <script src="js/map.js?v=b96327e"></script>
   <script src="js/crew.js?v=b96327e"></script>

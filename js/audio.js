@@ -7,7 +7,7 @@
 const AudioFX = (() => {
 
   const FILES = ['tap','mine','deliver','warning','death','spawn','reward','panic'];
-  const SFX_ASSET_V = '20260913a'; // менять при замене любого файла в assets/sfx/
+  const SFX_ASSET_V = '20260915a'; // менять при замене любого файла в assets/sfx/
   const MUSIC_MAIN  = 'assets/music/asteroid_ambient_01.mp3';  // фоновая музыка игры
   const MUSIC_DEATH = 'assets/music/asteroid_ambient_02.mp3';  // музыка экрана Game Over
   const MUSIC_FADE_MS = 300;
@@ -32,7 +32,7 @@ const AudioFX = (() => {
     master.gain.value = volume;
     master.connect(ctx.destination);
     FILES.forEach(n => {
-      fetch('assets/sfx/' + n + '.wav?v=' + SFX_ASSET_V)
+      fetch('assets/sfx/' + n + '.mp3?v=' + SFX_ASSET_V)
         .then(r => r.arrayBuffer())
         .then(ab => ctx.decodeAudioData(ab))
         .then(b => { buf[n] = b; })
@@ -48,6 +48,30 @@ const AudioFX = (() => {
   // Явный публичный вызов — начать буферизацию музыки ЗАРАНЕЕ (не дожидаясь
   // клика/пуска трека), но только когда это безопасно по времени (см. выше).
   function preloadMusic() { _initMusicElements(); }
+
+  // Мобильные браузеры (особенно iOS Safari) разрешают .play() у <audio>
+  // только внутри обработчика пользовательского жеста. Наша музыка стартует
+  // позже (после задержки перехода между экранами), поэтому «прогреваем»
+  // элементы прямо в момент первого касания: коротко играем и сразу ставим
+  // на паузу — после этого элемент считается разблокированным и его можно
+  // запускать программно в любой момент.
+  let _musicPrimed = false;
+  function primeMusic() {
+    if (_musicPrimed) return;
+    _musicPrimed = true;
+    _initMusicElements();
+    [mainMusicEl, deathMusicEl].forEach(el => {
+      if (!el) return;
+      try {
+        const v = el.volume;
+        el.volume = 0;
+        const p = el.play();
+        const done = () => { try { el.pause(); el.currentTime = 0; el.volume = v; } catch (e) {} };
+        if (p && typeof p.then === 'function') p.then(done).catch(() => { el.volume = v; });
+        else done();
+      } catch (e) { /* не критично */ }
+    });
+  }
 
   function _initMusicElements() {
     if (mainMusicEl) return;
@@ -193,8 +217,8 @@ const AudioFX = (() => {
     }
   }
   function getMusic()   { return musicOn; }
-  function unlock()     { _init(); if (ctx && ctx.state === 'suspended') ctx.resume(); }
+  function unlock()     { _init(); if (ctx && ctx.state === "suspended") ctx.resume(); primeMusic(); }
 
-  return { play, setVolume, getVolume, pause, resume, vibrate, setVibro, getVibro, setSfx, getSfx, setMusic, getMusic, unlock, playMainMusic, playDeathMusic, preloadMusic };
+  return { play, setVolume, getVolume, pause, resume, vibrate, setVibro, getVibro, setSfx, getSfx, setMusic, getMusic, unlock, playMainMusic, playDeathMusic, preloadMusic, primeMusic };
 
 })();

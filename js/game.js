@@ -40,6 +40,22 @@ const Game = (() => {
     running  = true;
     lastTime = performance.now();
     requestAnimationFrame(loop);
+
+    // Уведомляем Яндекс, что игра загрузилась и готова к показу (обязательное
+    // требование площадки). Без этого вызова на платформе висит их лоадер.
+    _notifyReady();
+  }
+
+  let _readySent = false;
+  function _notifyReady() {
+    if (_readySent) return;
+    try {
+      if (window.ysdk && ysdk.features && ysdk.features.LoadingAPI) {
+        ysdk.features.LoadingAPI.ready();
+        _readySent = true;
+        console.log('[Game] LoadingAPI.ready() отправлен');
+      }
+    } catch (e) { console.warn('[Game] LoadingAPI.ready():', e); }
   }
 
   // Полный запуск новой игры (кнопка НАЧАТЬ МИССИЮ / ПОПРОБОВАТЬ СНОВА)

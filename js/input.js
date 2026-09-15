@@ -75,6 +75,7 @@ const Input = (() => {
 
     canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
+      if (typeof AudioFX !== 'undefined') AudioFX.unlock(); // разблокировка звука внутри жеста (iOS/Android)
       const { x, y } = canvasPoint(e);
       if (typeof UIManager !== 'undefined' && UIManager.handleClick(x, y)) return;
       if (typeof HUD === 'undefined') return;
@@ -94,6 +95,7 @@ const Input = (() => {
     });
 
     canvas.addEventListener('mousedown', (e) => {
+      if (typeof AudioFX !== 'undefined') AudioFX.unlock(); // то же для десктопа
       const { x, y } = canvasPoint(e);
       console.log('[Input] canvas click:', Math.round(x), Math.round(y));
       if (typeof UIManager !== 'undefined' && UIManager.handleClick(x, y)) return;

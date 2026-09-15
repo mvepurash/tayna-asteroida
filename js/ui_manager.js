@@ -135,11 +135,14 @@ const UIManager = (() => {
     if (s === state) return;
     console.log('[UI]', state, '→', s);
     state = s;
+    if (s !== STATE.GAME_OVER) _adCooldownMsg = 0; // подсказка про кулдаун живёт только на Game Over
   }
   function getState() { return state; }
   function isPlaying() { return state === STATE.PLAYING; }
 
   let _adTimer = 0; // отсчёт заглушки рекламы
+  let _lastAdTime = 0;      // время последнего показа rewarded-видео (для кулдауна)
+  let _adCooldownMsg = 0;   // сек до следующей доступной рекламы (для подсказки на экране)
   let _flash = null; // эффект нажатия кнопки: {x,y,w,h,t}
   let _resetArm = 0; // таймер подтверждения сброса прогресса
   let _toggleAnim = null; // эффект нажатия тумблера: {id, t}
@@ -363,6 +366,14 @@ const UIManager = (() => {
       ctx.fillText(String(rec) + ' кристаллов', 276, 565);
       ctx.fillText(st.bestTime > 0 ? fmt(st.bestTime) : '--:--', 377, 565);
 
+      // Требование площадки: если reward-видео сейчас недоступно (кулдаун),
+      // сообщить об этом игроку явно, а не молча игнорировать нажатие.
+      if (_adCooldownMsg > 0) {
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillStyle = '#ffd36e';
+        ctx.fillText('Реклама будет доступна через ' + _adCooldownMsg + ' с', 240, 581);
+      }
+
       ctx.restore();
     } catch (e) { console.warn('[UI] _drawGameOverValues:', e); }
   }
@@ -564,12 +575,40 @@ const UIManager = (() => {
         Game.startNewGame();
         setState(STATE.PLAYING);
         break;
-      case 'watch_ad':
-        // ВАРИАНТ А (заглушка): видимый экран "РЕКЛАМА" с отсчётом 3с, затем +1 жизнь.
-        // ВАРИАНТ Б: заменить на ysdk.adv.showRewardedVideo({callbacks:{onRewarded:...}})
-        _adTimer = 3.0;
-        setState(STATE.REWARD_AD);
+      case 'watch_ad': {
+        // Кулдаун между показами rewarded-видео (требование площадки: не чаще
+        // чем раз в REWARDED_AD_COOLDOWN мс). Раньше константа в config.js
+        // была объявлена, но нигде не проверялась.
+        const now = Date.now();
+        if (now - _lastAdTime < CONFIG.REWARDED_AD_COOLDOWN) {
+          const left = Math.ceil((CONFIG.REWARDED_AD_COOLDOWN - (now - _lastAdTime)) / 1000);
+          _adCooldownMsg = left;   // покажем на экране, что кнопка пока недоступна
+          console.log(`[UI] Реклама недоступна ещё ${left}с`);
+          break;
+        }
+        _lastAdTime = now;
+
+        // Реальный показ через SDK, если площадка доступна; иначе — локальная
+        // заглушка с экраном "РЕКЛАМА" и отсчётом (для отладки вне Яндекса).
+        if (window.ysdk && ysdk.adv && ysdk.adv.showRewardedVideo) {
+          Game.pause();  // геймплей и кислород замирают на время ролика
+          let rewarded = false;
+          ysdk.adv.showRewardedVideo({
+            callbacks: {
+              onRewarded: () => { rewarded = true; },
+              onClose: () => {
+                if (rewarded) { setState(STATE.PLAYING); Game.resumeAfterReward(); }
+                else          { Game.resume(); }
+              },
+              onError: () => { Game.resume(); },
+            },
+          });
+        } else {
+          _adTimer = 3.0;
+          setState(STATE.REWARD_AD);
+        }
         break;
+      }
     }
   }
 
