@@ -25,6 +25,9 @@ echo "==> Копирование игровых файлов"
 cp index.html "$STAGE/"
 cp -r js "$STAGE/"
 cp -r assets "$STAGE/"
+# PWA-файлы (установка на домашний экран)
+cp manifest.json "$STAGE/"
+cp sw.js "$STAGE/"
 
 # Что в дистрибутив НЕ попадает:
 #   _unused/              — архив неиспользуемых файлов

@@ -4,6 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Тайна Астероида v3</title>
+
+  <!-- PWA: установка на домашний экран -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a0a12">
+  <meta name="description" content="Добывайте кристаллы на астероиде, следите за кислородом и уклоняйтесь от щупалец.">
+  <!-- iOS не читает manifest.json, для него отдельные теги -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Тайна Астероида">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
   <style>
 * {
   margin: 0;
@@ -74,6 +85,22 @@ html, body {
   <script src="js/audio.js?v=65b42d0"></script>
   <script src="js/ui_manager.js?v=65b42d0"></script>
   <script src="js/game.js?v=65b42d0"></script>
+
+  <script>
+    // Регистрация service worker — включает установку на домашний экран.
+    // НЕ регистрируем внутри Яндекс Игр: там игра работает в их iframe,
+    // свой кэш ей не нужен и может конфликтовать с платформой.
+    (function () {
+      var insideFrame = window.self !== window.top;
+      if ('serviceWorker' in navigator && !insideFrame) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('sw.js').catch(function (e) {
+            console.warn('[PWA] service worker не зарегистрирован:', e);
+          });
+        });
+      }
+    })();
+  </script>
 
 </body>
 </html>
