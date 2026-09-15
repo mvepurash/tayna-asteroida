@@ -66,7 +66,7 @@ const Oxygen = (() => {
       // Убиваем астронавта от удушья
       if (st !== Astronaut.STATE.DEAD) {
         console.log('[Oxygen] Кислород закончился — астронавт погиб');
-        Astronaut.kill();
+        Astronaut.kill('oxygen');   // удушье — своя анимация гибели
       }
     }
   }

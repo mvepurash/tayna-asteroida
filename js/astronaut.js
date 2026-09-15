@@ -192,8 +192,14 @@ const Astronaut = (() => {
   }
 
   // Вызов из game.js при захвате щупальцем
-  function kill() {
+  // Причина гибели: 'worm' (схвачен щупальцем) или 'oxygen' (кончился кислород).
+  // Нужна рендереру, чтобы показать разную анимацию смерти.
+  let deathCause = 'worm';
+  function getDeathCause() { return deathCause; }
+
+  function kill(cause) {
     if (state === STATE.DEAD) return;
+    deathCause = (cause === 'oxygen') ? 'oxygen' : 'worm';
     state    = STATE.DEAD;
     isMining = false;
     moveT    = 0;
@@ -418,6 +424,7 @@ const Astronaut = (() => {
     getSpawnProgress,
     setOnDeath,
     getState,
+    getDeathCause,
     getNode,
     getRenderX,
     getRenderY,

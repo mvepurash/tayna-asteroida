@@ -225,7 +225,7 @@ const Game = (() => {
       deathTimer -= dt;
       if (deathTimer <= 0) {
         waitingDeath = false;
-        Astronaut.kill();
+        Astronaut.kill('worm');     // схвачен щупальцем
       }
     } else if (invincTimer <= 0) {
       const captured = Tentacles.checkCapture();

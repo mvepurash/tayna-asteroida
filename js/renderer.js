@@ -18,7 +18,8 @@ const Renderer = (() => {
     idle:  { frames: [], fps: 1.5, type: 'pingpong' },
     move:  { frames: [], fps: 8,   type: 'pingpong' },
     mine:  { frames: [], fps: 1.0, type: 'seq_loop' }, // 4 кадра × 1fps = 4.0 сек, плавная смена поз добычи
-    death: { frames: [], fps: 2,   type: 'once'     }, // 3 кадра × 0.5с = 1.5с
+    death: { frames: [], fps: 2,   type: 'once'     }, // 3 кадра × 0.5с = 1.5с (гибель от червя)
+    suffocate: { frames: [], fps: 2, type: 'once'   }, // 3 кадра × 0.5с = 1.5с (гибель от удушья)
     spawn: { frames: [], fps: 1.0, type: 'once'     }, // 5 кадров × 1fps = 5.0 сек, синхронно с SPAWN_DURATION
     // spawn — спрайт астронавта = idle_01, анимация на шаттле отдельно
   };
@@ -29,6 +30,7 @@ const Renderer = (() => {
     mine:  ['astronaut_mine_01.png',  'astronaut_mine_02.png',
             'astronaut_mine_03.png',  'astronaut_mine_04.png'],
     death: ['astronaut_dead_01.png',  'astronaut_dead_02.png',  'astronaut_dead_03.png'],
+    suffocate: ['astronaut_suffocate_01.png', 'astronaut_suffocate_02.png', 'astronaut_suffocate_03.png'],
     spawn: ['astronaut_spawn_01.png', 'astronaut_spawn_02.png', 'astronaut_spawn_03.png',
             'astronaut_spawn_04.png', 'astronaut_spawn_05.png'],
   };
@@ -181,7 +183,10 @@ const Renderer = (() => {
       case Astronaut.STATE.IDLE:     return 'idle';
       case Astronaut.STATE.MOVING:   return 'move';
       case Astronaut.STATE.MINING:   return 'mine';
-      case Astronaut.STATE.DEAD:     return 'death';
+      case Astronaut.STATE.DEAD:
+        // Разные анимации: удушье (схватился за горло, осел) vs захват червём
+        return (Astronaut.getDeathCause && Astronaut.getDeathCause() === 'oxygen')
+          ? 'suffocate' : 'death';
       case Astronaut.STATE.SPAWNING: return 'spawn';
       default:                       return 'idle';
     }
