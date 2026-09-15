@@ -51,34 +51,6 @@ const Renderer = (() => {
     mirror:  false,  // MOVE зеркалим по X при развороте
   };
 
-  // === SPRITE_DATA: base64-кодированные спрайты (встроены для работы на file:// и в артефактах) ===
-  const SPRITE_DATA = {
-    'astronaut_idle_01.png': 'assets/sprites/astronaut_idle_01.png',
-    'astronaut_idle_02.png': 'assets/sprites/astronaut_idle_02.png',
-    'astronaut_move_01.png': 'assets/sprites/astronaut_move_01.png',
-    'astronaut_move_02.png': 'assets/sprites/astronaut_move_02.png',
-    'astronaut_move_03.png': 'assets/sprites/astronaut_move_03.png',
-    'astronaut_mine_01.png': 'assets/sprites/astronaut_mine_01.png',
-    'astronaut_mine_02.png': 'assets/sprites/astronaut_mine_02.png',
-    'astronaut_mine_03.png': 'assets/sprites/astronaut_mine_03.png',
-    'astronaut_mine_04.png': 'assets/sprites/astronaut_mine_04.png',
-    'astronaut_dead_01.png': 'assets/sprites/astronaut_dead_01.png',
-    'astronaut_dead_02.png': 'assets/sprites/astronaut_dead_02.png',
-    'astronaut_dead_03.png': 'assets/sprites/astronaut_dead_03.png',
-    'astronaut_spawn_01.png': 'assets/sprites/astronaut_spawn_01.png',
-    'astronaut_spawn_02.png': 'assets/sprites/astronaut_spawn_02.png',
-    'astronaut_spawn_03.png': 'assets/sprites/astronaut_spawn_03.png',
-    'astronaut_spawn_04.png': 'assets/sprites/astronaut_spawn_04.png',
-    'astronaut_spawn_05.png': 'assets/sprites/astronaut_spawn_05.png',
-    'shuttle.png': 'assets/sprites/shuttle.png',
-  
-    'astronaut_spawn_01.png': 'assets/sprites/astronaut_spawn_01.png',
-    'astronaut_spawn_02.png': 'assets/sprites/astronaut_spawn_02.png',
-    'astronaut_spawn_03.png': 'assets/sprites/astronaut_spawn_03.png',
-    'astronaut_spawn_04.png': 'assets/sprites/astronaut_spawn_04.png',
-    'astronaut_spawn_05.png': 'assets/sprites/astronaut_spawn_05.png',
-  };
-
   // base64 для щупалец (используется в tentacles.js через window.TENTACLE_SPRITE_DATA)
   window.TENTACLE_SPRITE_DATA = {
     head: 'assets/sprites/tentacle/head.png',
@@ -95,7 +67,7 @@ const Renderer = (() => {
       ANIMS[key].frames = files.map(f => {
         const img = new Image();
         img.onload = () => { img._ready = true; };
-        img.src = SPRITE_DATA[f] || `assets/sprites/${f}`;
+        img.src = `assets/sprites/astronaut/${f}`;
         // Если уже загружен синхронно (base64)
         if (img.complete && img.naturalWidth > 0) img._ready = true;
         return img;
@@ -103,7 +75,7 @@ const Renderer = (() => {
     }
     // Загружаем статичный шаттл
     shuttleImg = new Image();
-    shuttleImg.src = SPRITE_DATA['shuttle.png'] || 'assets/sprites/shuttle.png';
+    shuttleImg.src = 'assets/sprites/shuttle.png';
     // Фон кратера
     bgImg = new Image();
     bgImg.src = 'assets/bg_crater.png';
