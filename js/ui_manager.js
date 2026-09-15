@@ -63,11 +63,11 @@ const UIManager = (() => {
       { id: 'back', x: 365, y: 122, w: 33,  h: 36, pad: 8 },  // X (закрыть)
       { id: 'back', x: 0,   y: 0,   w: 480, h: 854 },  // запасная зона: клик мимо кнопок тоже закрывает (без вспышки)
     ],
-    // Game Over (game_over_screen.png): 3 кнопки
+    // Game Over (game_over_screen.webp): 3 кнопки — ТОЧНЫЙ скан границ 17.09.2026
     game_over: [
-      { id: 'retry',    x: 90, y: 560, w: 300, h: 46 },  // ПОПРОБОВАТЬ СНОВА
-      { id: 'to_menu',  x: 90, y: 618, w: 300, h: 46 },  // ВЕРНУТЬСЯ В ГЛАВНОЕ МЕНЮ
-      { id: 'watch_ad', x: 90, y: 676, w: 300, h: 52 },  // СМОТРЕТЬ ВИДЕО +1 жизнь
+      { id: 'watch_ad', x: 38, y: 588, w: 403, h: 45 },  // ВОСКРЕСНУТЬ ЗА РЕКЛАМУ +50
+      { id: 'retry',    x: 38, y: 639, w: 403, h: 42 },  // ПОПРОБОВАТЬ СНОВА
+      { id: 'to_menu',  x: 38, y: 686, w: 403, h: 42 },  // ВЕРНУТЬСЯ В ГЛАВНОЕ МЕНЮ
     ],
   };
 
@@ -158,7 +158,7 @@ const UIManager = (() => {
       case STATE.RECORDS:
         _overlay(ctx); _full(ctx, 'records_screen'); _drawRecordsValues(ctx); break;
       case STATE.GAME_OVER:
-        _overlay(ctx); _full(ctx, 'game_over_screen'); break;
+        _overlay(ctx); _full(ctx, 'game_over_screen'); _drawGameOverValues(ctx); break;
       case STATE.REWARD_AD:
         _drawAdStub(ctx, dt || 0); break;
       case STATE.PLAYING:
@@ -323,6 +323,48 @@ const UIManager = (() => {
         ctx.drawImage(img, 8, 10, 54, 54);
       }
     } catch (e) { console.warn('[UI] _drawMuteIcon:', e); }
+  }
+
+  // Реальные значения поверх экрана Game Over (в макете они запечены как
+  // заглушки 124 / 05:37 / 176 кристаллов / 08:42 — закрываем их фоном и
+  // рисуем фактические). Координаты сняты точным сканом границ 17.09.2026.
+  function _drawGameOverValues(ctx) {
+    try {
+      const st      = Save.getStats();
+      const rec     = Crystals.getRecord();
+      const mined   = Crystals.getSessionTotal();      // доставлено за эту миссию
+      const runTime = Game.sessionTime;                // длительность миссии, сек
+      const fmt = s => {
+        s = Math.max(0, Math.round(s));
+        const m = Math.floor(s / 60), ss = s % 60;
+        return String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+      };
+
+      ctx.save();
+      // перекрываем запечённые заглушки фоном слотов (фон однородный, ~#00050a)
+      ctx.fillStyle = '#00060b';
+      ctx.fillRect(126, 494, 70, 34);   // "124"
+      ctx.fillRect(324, 494, 84, 34);   // "05:37"
+      ctx.fillRect(230, 555, 102, 21);  // "176 кристаллов"
+      ctx.fillRect(356, 555, 42, 21);   // "08:42"
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillStyle = '#5fd8ff';
+      ctx.fillText(String(mined), 159, 511);           // ДОБЫТО КРИСТАЛЛОВ
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(fmt(runTime), 365, 511);            // ВРЕМЯ МИССИИ
+
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillStyle = '#dceeff';
+      ctx.fillText(String(rec) + ' кристаллов', 276, 565);
+      ctx.fillText(st.bestTime > 0 ? fmt(st.bestTime) : '--:--', 377, 565);
+
+      ctx.restore();
+    } catch (e) { console.warn('[UI] _drawGameOverValues:', e); }
   }
 
   function _drawSettingsExtras(ctx, dt) {

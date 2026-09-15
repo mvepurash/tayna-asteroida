@@ -17,6 +17,7 @@ const Game = (() => {
   let deathTimer      = 0;
   let waitingDeath    = false;
   let invincTimer     = 0;  // неуязвимость после respawn
+  const REVIVE_BONUS  = 50; // кристаллов за просмотр рекламы (соответствует надписи на кнопке)
   let miningTimer     = 0;  // таймер автодобычи при удержании
   let _pendingGameOver = false;  // ожидание показа экрана Game Over
   let _runStart        = 0;      // sessionTime старта текущего рейса (для лучшего времени)
@@ -80,6 +81,7 @@ const Game = (() => {
     Astronaut.startSpawning();
     Oxygen.reset();
     Crystals.resetRun();
+    Crystals.grantBonus(REVIVE_BONUS);  // награда, обещанная на кнопке «ВОСКРЕСНУТЬ ЗА РЕКЛАМУ +50»
     invincTimer = 3.0;
     running  = true;
     lastTime = performance.now();

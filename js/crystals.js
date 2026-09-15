@@ -26,6 +26,13 @@ const Crystals = (() => {
     carried = 0;
   }
 
+  // Бонусные кристаллы (награда за просмотр рекламы на экране Game Over).
+  // Кладём сразу в "несёт" — игрок должен довезти их до шаттла, как обычную добычу.
+  function grantBonus(amount) {
+    carried += amount;
+    console.log(`[Crystals] Бонус +${amount}, несёт: ${carried}`);
+  }
+
   // ---------- Добыча (тап кнопки ДОБЫЧА) ----------
 
   function mine(bypass_interval = false) {
@@ -93,6 +100,7 @@ const Crystals = (() => {
     getCarried,
     getSessionTotal,
     getRecord,
+    grantBonus,
   };
 
 })();
