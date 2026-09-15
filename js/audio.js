@@ -157,18 +157,44 @@ const AudioFX = (() => {
     _safePause(deathMusicEl);
   }
 
+  // Длинные звуки (сигнал паники ~15с) нужно уметь прерывать досрочно:
+  // например, игрок успел вернуться на шаттл и пополнить кислород — сирена
+  // должна замолчать сразу, а не доигрывать в тишине ещё десяток секунд.
+  // Храним ссылку на текущий источник по имени звука.
+  const _playing = {};
+
   function play(name, vol = 1) {
     _init();
     if (!ctx || !sfxOn) return;
     if (ctx.state === 'suspended') ctx.resume();
     const b = buf[name];
     if (!b) return;
+    // повторный запуск того же звука обрывает предыдущий экземпляр
+    stop(name);
     const src = ctx.createBufferSource();
     src.buffer = b;
     const g = ctx.createGain();
     g.gain.value = vol;
     src.connect(g); g.connect(master);
+    src.onended = () => { if (_playing[name] && _playing[name].src === src) delete _playing[name]; };
     src.start();
+    _playing[name] = { src, gain: g };
+  }
+
+  // Остановить звук по имени. Гасим за 80мс, чтобы не было щелчка от обрыва волны.
+  function stop(name) {
+    const cur = _playing[name];
+    if (!cur) return;
+    delete _playing[name];
+    try {
+      const t = ctx.currentTime;
+      cur.gain.gain.cancelScheduledValues(t);
+      cur.gain.gain.setValueAtTime(cur.gain.gain.value, t);
+      cur.gain.gain.linearRampToValueAtTime(0, t + 0.08);
+      cur.src.stop(t + 0.09);
+    } catch (e) {
+      try { cur.src.stop(); } catch (e2) {}
+    }
   }
 
   function setVolume(v) {
@@ -219,6 +245,6 @@ const AudioFX = (() => {
   function getMusic()   { return musicOn; }
   function unlock()     { _init(); if (ctx && ctx.state === "suspended") ctx.resume(); primeMusic(); }
 
-  return { play, setVolume, getVolume, pause, resume, vibrate, setVibro, getVibro, setSfx, getSfx, setMusic, getMusic, unlock, playMainMusic, playDeathMusic, preloadMusic, primeMusic };
+  return { play, stop, setVolume, getVolume, pause, resume, vibrate, setVibro, getVibro, setSfx, getSfx, setMusic, getMusic, unlock, playMainMusic, playDeathMusic, preloadMusic, primeMusic };
 
 })();

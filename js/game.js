@@ -29,6 +29,7 @@ const Game = (() => {
     Tentacles.init();
     Oxygen.init();
     Oxygen.setOnPanic(() => AudioFX.play('panic')); // тревожный сигнал на 15 сек кислорода
+    Oxygen.setOnPanicEnd(() => AudioFX.stop('panic')); // кислород пополнен/новый рейс/смерть — глушим сирену
     Crystals.init();
     Astronaut.init();   // задаёт стартовую позицию (платформа 1), иначе рендерится в (0,0) до первого спавна
     Input.init();

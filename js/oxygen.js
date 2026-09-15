@@ -16,6 +16,15 @@ const Oxygen = (() => {
   let panicTriggered = false;         // одноразовый триггер (сброс при пополнении/старте)
   let _onPanic = null;
   function setOnPanic(cb) { _onPanic = cb; }
+  // Вызывается когда тревога перестаёт быть актуальной (кислород пополнен,
+  // новый рейс, смерть) — чтобы заглушить длинную сирену досрочно.
+  let _onPanicEnd = null;
+  function setOnPanicEnd(cb) { _onPanicEnd = cb; }
+  function _clearPanic() {
+    const wasOn = panicTriggered;
+    panicTriggered = false;
+    if (wasOn && _onPanicEnd) _onPanicEnd();
+  }
 
   // ---------- Публичное API ----------
 
@@ -23,13 +32,13 @@ const Oxygen = (() => {
     current  = max;
     depleted = false;
     paused   = false;
-    panicTriggered = false;
+    _clearPanic();
   }
 
   function reset() {
     current  = max;
     depleted = false;
-    panicTriggered = false;
+    _clearPanic();
   }
 
   function pause()  { paused = true;  }
@@ -53,6 +62,7 @@ const Oxygen = (() => {
     if (current <= 0) {
       current  = 0;
       depleted = true;
+      _clearPanic();   // сирена не должна продолжаться после гибели
       // Убиваем астронавта от удушья
       if (st !== Astronaut.STATE.DEAD) {
         console.log('[Oxygen] Кислород закончился — астронавт погиб');
@@ -65,7 +75,7 @@ const Oxygen = (() => {
   function refill() {
     current  = max;
     depleted = false;
-    panicTriggered = false;
+    _clearPanic();
     console.log('[Oxygen] Кислород пополнен');
   }
 
@@ -102,6 +112,7 @@ const Oxygen = (() => {
     isPanicZone,
     getAlertLevel,
     setOnPanic,
+    setOnPanicEnd,
   };
 
 })();
