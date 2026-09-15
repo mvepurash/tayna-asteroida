@@ -58,8 +58,10 @@ const UIManager = (() => {
       { id: 'back', x: 367, y: 161, w: 28,  h: 31, pad: 8 },  // X (закрыть)
       { id: 'back', x: 0,   y: 0,   w: 480, h: 854 },  // запасная зона: клик мимо кнопок тоже закрывает (без вспышки)
     ],
-    records: [
-      { id: 'back', x: 0, y: 0, w: 480, h: 854 },  // X/НАЗАД/любой клик = назад в паузу
+    records: [  // ТОЧНЫЙ скан границ 17.09.2026 — раньше была ОДНА зона на весь экран без эффекта нажатия
+      { id: 'back', x: 111, y: 704, w: 251, h: 53 },  // НАЗАД
+      { id: 'back', x: 365, y: 122, w: 33,  h: 36, pad: 8 },  // X (закрыть)
+      { id: 'back', x: 0,   y: 0,   w: 480, h: 854 },  // запасная зона: клик мимо кнопок тоже закрывает (без вспышки)
     ],
     // Game Over (game_over_screen.png): 3 кнопки
     game_over: [
@@ -277,11 +279,11 @@ const UIManager = (() => {
     const st = Save.getStats();
     const rec = Crystals.getRecord();
     const fmt = s => { s = Math.round(s); const m = Math.floor(s/60), ss = s%60; return m + ':' + String(ss).padStart(2,'0'); };
-    const rows = [  // центры слотов перепроверены примеркой на макете 14.07.2026
-      [266, String(rec)],
-      [366, st.bestTime > 0 ? fmt(st.bestTime) : '—'],
-      [481, String(st.flights)],
-      [589, String(st.totalMined)],
+    const rows = [  // центры слотов перемерены точным сканом границ 17.09.2026
+      [264, String(rec)],
+      [372, st.bestTime > 0 ? fmt(st.bestTime) : '—'],
+      [478, String(st.flights)],
+      [584, String(st.totalMined)],
     ];
     ctx.save();
     ctx.font = 'bold 22px sans-serif';
