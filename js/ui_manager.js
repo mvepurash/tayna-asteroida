@@ -76,7 +76,7 @@ const UIManager = (() => {
   // затрагивающем assets/ui_designs) — исключает залипание старой/битой копии в кэше браузера.
   const UI_ASSET_V = '20260918a';
 
-  function init() {
+  function init(onAssetsReady) {
     const names = ['title_screen', 'pause_screen', 'settings_screen', 'game_over_screen', 'briefing_screen', 'records_screen', 'pause_button'];
     let loaded = 0;
     names.forEach(n => _loadScreen(n, () => {
@@ -87,6 +87,7 @@ const UIManager = (() => {
         // договорились — иначе тяжёлый mp3 конкурирует за сеть с мелкими
         // экранами (пауза/настройки) и те могут зависать в "ЗАГРУЗКА…".
         if (typeof AudioFX !== 'undefined' && AudioFX.preloadMusic) AudioFX.preloadMusic();
+        if (typeof onAssetsReady === 'function') onAssetsReady();
       }
     }));
 
@@ -236,7 +237,10 @@ const UIManager = (() => {
     return { x, y, w, h, img, sx: x, sy: y, sw: w, sh: h, t: FLASH_DURATION };
   }
 
-  // Заглушка рекламы: чёрный экран, "РЕКЛАМА", отсчёт. По истечении — +1 жизнь.
+  // Запасной экран, когда SDK площадки недоступен (локальный запуск, сбой
+  // загрузки рекламы). Награду выдаём честно — игрок не должен страдать из-за
+  // того, что ролик не подгрузился. Текстов вида "заглушка"/"тест" здесь быть
+  // не должно: модерация Яндекса считает такое признаком незавершённой игры.
   function _drawAdStub(ctx, dt) {
     _adTimer -= dt;
     ctx.fillStyle = '#000';
@@ -244,11 +248,11 @@ const UIManager = (() => {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#00d4ff';
-    ctx.font = 'bold 34px sans-serif';
-    ctx.fillText('РЕКЛАМА', CONFIG.CANVAS_W / 2, 360);
-    ctx.fillStyle = '#888';
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillText('ВОССТАНОВЛЕНИЕ', CONFIG.CANVAS_W / 2, 360);
+    ctx.fillStyle = '#9fd8ff';
     ctx.font = '16px sans-serif';
-    ctx.fillText('(заглушка — здесь будет видео)', CONFIG.CANVAS_W / 2, 400);
+    ctx.fillText('Подготовка систем скафандра', CONFIG.CANVAS_W / 2, 398);
     ctx.fillStyle = '#FFB800';
     ctx.font = 'bold 48px sans-serif';
     ctx.fillText(Math.max(1, Math.ceil(_adTimer)), CONFIG.CANVAS_W / 2, 470);
