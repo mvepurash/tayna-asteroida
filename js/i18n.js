@@ -38,6 +38,21 @@ const I18n = (() => {
       crystals:       'кристаллов',
       noTime:         '--:--',
     },
+    en: {
+      loading:        'LOADING',
+      shuttle:        'SHUTTLE',
+      record:         'BEST',
+      minedPerRun:    'MINED THIS RUN',
+      mine:           'MINE',
+      mineHint:       'TAP',
+      resetConfirm:   'TAP AGAIN TO RESET',
+      reviveTitle:    'RECOVERY',
+      reviveSubtitle: 'Preparing suit systems',
+      adCooldown:     'Ad available in',
+      seconds:        's',
+      crystals:       'crystals',
+      noTime:         '--:--',
+    },
   };
 
   let lang = FALLBACK;
@@ -65,8 +80,31 @@ const I18n = (() => {
     if (detected && lang !== detected) {
       console.log(`[I18n] язык "${detected}" не поддержан, откат на "${lang}"`);
     }
+
+    // Режим проверки неполного перевода: ?lang=xx задаёт язык и текстов тоже,
+    // иначе на английских экранах остались бы русские надписи от кода и
+    // проверка была бы нерепрезентативной. Только для localhost/github.io.
+    const forced = _forcedLang();
+    if (forced && DICT[forced]) {
+      lang = forced;
+      console.log('[I18n] тексты тоже переключены на', forced, '(режим проверки)');
+    }
+
     console.log('[I18n] выбран язык:', lang);
     return lang;
+  }
+
+  // Принудительный язык из адреса — только на localhost и github.io.
+  // На площадке Яндекса игнорируется, чтобы игрок не включил незавершённый перевод.
+  function _forcedLang() {
+    try {
+      const devHost = ['localhost', '127.0.0.1', ''].includes(location.hostname)
+                   || location.hostname.endsWith('.github.io');
+      if (!devHost) return null;
+      return new URLSearchParams(location.search).get('lang');
+    } catch (e) {
+      return null;
+    }
   }
 
   // Получить строку. Если ключа нет — возвращаем сам ключ, чтобы
@@ -87,17 +125,11 @@ const I18n = (() => {
   // включения в SUPPORTED. Работает только на localhost и github.io —
   // на площадке Яндекса переопределение игнорируется.
   function getScreenLang() {
-    try {
-      const devHost = ['localhost', '127.0.0.1', ''].includes(location.hostname)
-                   || location.hostname.endsWith('.github.io');
-      if (devHost) {
-        const forced = new URLSearchParams(location.search).get('lang');
-        if (forced) {
-          console.log('[I18n] язык экранов принудительно:', forced, '(режим проверки)');
-          return forced;
-        }
-      }
-    } catch (e) { /* не критично */ }
+    const forced = _forcedLang();
+    if (forced) {
+      console.log('[I18n] язык экранов принудительно:', forced, '(режим проверки)');
+      return forced;
+    }
     return lang;
   }
 

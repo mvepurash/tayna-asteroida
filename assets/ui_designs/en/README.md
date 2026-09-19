@@ -16,7 +16,7 @@
 - [ ] `settings_screen.webp`
 - [ ] `briefing_screen.webp`
 - [ ] `records_screen.webp`
-- [ ] `game_over_screen.webp`
+- [x] `game_over_screen.webp`
 
 `pause_button.webp` переводить не нужно — на нём только значок.
 
