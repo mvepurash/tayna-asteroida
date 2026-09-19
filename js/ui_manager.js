@@ -103,10 +103,22 @@ const UIManager = (() => {
   // повторный запрос того же файла только добавляет конкуренции за сеть и
   // может УХУДШИТЬ зависание вместо того чтобы его вылечить. Один разумный
   // таймаут + диагностика в консоль для отладки на реальном устройстве.
+  //
+  // Локализация: если язык не русский, сначала пробуем файл из папки языка
+  // (assets/ui_designs/en/...). Нет такого файла — молча берём русский.
+  // Благодаря этому набор переводов можно пополнять по одному экрану:
+  // переведённые покажутся на своём языке, остальные останутся русскими.
   const STALL_MS = 8000;
+  function _screenPath(n, lang) {
+    const base = 'assets/ui_designs/';
+    return (lang && lang !== 'ru' ? base + lang + '/' : base) + n + '.webp?v=' + UI_ASSET_V;
+  }
+
   function _loadScreen(n, onSettled) {
     const img = new Image();
     let settled = false;
+    let triedFallback = false;
+    const lang = (typeof I18n !== 'undefined') ? I18n.getScreenLang() : 'ru';
     const t0 = performance.now();
     const stallTimer = setTimeout(() => {
       if (settled) return;
@@ -122,12 +134,19 @@ const UIManager = (() => {
     };
     img.onerror = () => {
       if (settled) return;
+      // Нет локализованной версии — откатываемся на русскую, это штатный случай
+      if (!triedFallback && lang !== 'ru') {
+        triedFallback = true;
+        console.log(`[UI] "${n}" нет на языке "${lang}" — беру русский`);
+        img.src = _screenPath(n, 'ru');
+        return;
+      }
       settled = true;
       clearTimeout(stallTimer);
       console.warn(`[UI] ошибка загрузки "${n}"`);
       onSettled();
     };
-    img.src = 'assets/ui_designs/' + n + '.webp?v=' + UI_ASSET_V;
+    img.src = _screenPath(n, lang);
     screens[n] = img;
   }
 

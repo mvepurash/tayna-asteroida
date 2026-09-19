@@ -82,6 +82,25 @@ const I18n = (() => {
 
   function getLang() { return lang; }
 
-  return { init, t, getLang };
+  // Язык для картинок экранов. Отличается от getLang() тем, что может быть
+  // переопределён параметром ?lang=xx для проверки неполных наборов до их
+  // включения в SUPPORTED. Работает только на localhost и github.io —
+  // на площадке Яндекса переопределение игнорируется.
+  function getScreenLang() {
+    try {
+      const devHost = ['localhost', '127.0.0.1', ''].includes(location.hostname)
+                   || location.hostname.endsWith('.github.io');
+      if (devHost) {
+        const forced = new URLSearchParams(location.search).get('lang');
+        if (forced) {
+          console.log('[I18n] язык экранов принудительно:', forced, '(режим проверки)');
+          return forced;
+        }
+      }
+    } catch (e) { /* не критично */ }
+    return lang;
+  }
+
+  return { init, t, getLang, getScreenLang };
 
 })();
