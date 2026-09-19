@@ -344,7 +344,7 @@ const Renderer = (() => {
       ctx.font         = 'bold 13px sans-serif';
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('ШАТТЛ', pos.x, pos.y);
+      ctx.fillText(I18n.t('shuttle'), pos.x, pos.y);
     }
   }
 

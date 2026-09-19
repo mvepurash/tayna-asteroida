@@ -333,7 +333,7 @@ const HUD = (() => {
 
     ctx.fillStyle = 'rgba(150,220,255,0.75)';
     ctx.font      = 'bold 10px sans-serif';
-    ctx.fillText('РЕКОРД', cx, BOT_Y + 33 * BOT_SY);
+    ctx.fillText(I18n.t('record'), cx, BOT_Y + 33 * BOT_SY);
 
     ctx.fillStyle = '#ffffff';
     ctx.font      = 'bold 20px sans-serif';
@@ -341,7 +341,7 @@ const HUD = (() => {
 
     ctx.fillStyle = 'rgba(150,220,255,0.75)';
     ctx.font      = 'bold 10px sans-serif';
-    ctx.fillText('ДОБЫТО ЗА РЕЙС', cx, BOT_Y + 68 * BOT_SY);
+    ctx.fillText(I18n.t('minedPerRun'), cx, BOT_Y + 68 * BOT_SY);
 
     ctx.fillStyle = CRYSTAL_COLOR;
     ctx.font      = 'bold 16px sans-serif';
@@ -379,12 +379,12 @@ const HUD = (() => {
     ctx.font         = 'bold 13px sans-serif';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText('ДОБЫЧА', ECX, ECY + 6);
+    ctx.fillText(I18n.t('mine'), ECX, ECY + 6);
 
     if (onMine) {
       ctx.fillStyle = 'rgba(255,200,0,0.55)';
       ctx.font      = '10px sans-serif';
-      ctx.fillText('НАЖИМАЙТЕ', ECX, ECY + 21);
+      ctx.fillText(I18n.t('mineHint'), ECX, ECY + 21);
     }
   }
 

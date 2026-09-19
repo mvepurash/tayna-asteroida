@@ -249,10 +249,10 @@ const UIManager = (() => {
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#00d4ff';
     ctx.font = 'bold 30px sans-serif';
-    ctx.fillText('ВОССТАНОВЛЕНИЕ', CONFIG.CANVAS_W / 2, 360);
+    ctx.fillText(I18n.t('reviveTitle'), CONFIG.CANVAS_W / 2, 360);
     ctx.fillStyle = '#9fd8ff';
     ctx.font = '16px sans-serif';
-    ctx.fillText('Подготовка систем скафандра', CONFIG.CANVAS_W / 2, 398);
+    ctx.fillText(I18n.t('reviveSubtitle'), CONFIG.CANVAS_W / 2, 398);
     ctx.fillStyle = '#FFB800';
     ctx.font = 'bold 48px sans-serif';
     ctx.fillText(Math.max(1, Math.ceil(_adTimer)), CONFIG.CANVAS_W / 2, 470);
@@ -274,7 +274,7 @@ const UIManager = (() => {
       ctx.font = 'bold 20px sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       const dots = '.'.repeat(1 + Math.floor(performance.now() / 400) % 3);
-      ctx.fillText('ЗАГРУЗКА' + dots, CONFIG.CANVAS_W / 2, CONFIG.CANVAS_H / 2);
+      ctx.fillText(I18n.t('loading') + dots, CONFIG.CANVAS_W / 2, CONFIG.CANVAS_H / 2);
     }
   }
   function _overlay(ctx) {
@@ -367,15 +367,15 @@ const UIManager = (() => {
 
       ctx.font = 'bold 13px sans-serif';
       ctx.fillStyle = '#dceeff';
-      ctx.fillText(String(rec) + ' кристаллов', 276, 565);
-      ctx.fillText(st.bestTime > 0 ? fmt(st.bestTime) : '--:--', 377, 565);
+      ctx.fillText(String(rec) + ' ' + I18n.t('crystals'), 276, 565);
+      ctx.fillText(st.bestTime > 0 ? fmt(st.bestTime) : I18n.t('noTime'), 377, 565);
 
       // Требование площадки: если reward-видео сейчас недоступно (кулдаун),
       // сообщить об этом игроку явно, а не молча игнорировать нажатие.
       if (_adCooldownMsg > 0) {
         ctx.font = 'bold 12px sans-serif';
         ctx.fillStyle = '#ffd36e';
-        ctx.fillText('Реклама будет доступна через ' + _adCooldownMsg + ' с', 240, 581);
+        ctx.fillText(I18n.t('adCooldown') + ' ' + _adCooldownMsg + ' ' + I18n.t('seconds'), 240, 581);
       }
 
       ctx.restore();
@@ -420,7 +420,7 @@ const UIManager = (() => {
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 16px sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('НАЖМИТЕ ЕЩЁ РАЗ ДЛЯ СБРОСА (' + Math.ceil(_resetArm) + ')', 277, 536);
+      ctx.fillText(I18n.t('resetConfirm') + ' (' + Math.ceil(_resetArm) + ')', 277, 536);
     }
     ctx.restore();
   }

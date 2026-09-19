@@ -314,9 +314,11 @@ const Game = (() => {
     if (typeof YaGames !== 'undefined') {
       YaGames.init().then(ysdk => {
         window.ysdk = ysdk;
+        I18n.init(ysdk);   // автоопределение языка при запуске (п. 2.14 требований)
         init();
-      }).catch(() => init());
+      }).catch(() => { I18n.init(null); init(); });
     } else {
+      I18n.init(null);     // вне площадки — язык браузера, откат на резервный
       init();
     }
   });
