@@ -20,7 +20,7 @@ const Renderer = (() => {
     mine:  { frames: [], fps: 1.0, type: 'seq_loop' }, // 4 кадра × 1fps = 4.0 сек, плавная смена поз добычи
     death: { frames: [], fps: 2,   type: 'once'     }, // 3 кадра × 0.5с = 1.5с (гибель от червя)
     suffocate: { frames: [], fps: 2, type: 'once'   }, // 3 кадра × 0.5с = 1.5с (гибель от удушья)
-    spawn: { frames: [], fps: 1.0, type: 'once'     }, // 5 кадров × 1fps = 5.0 сек, синхронно с SPAWN_DURATION
+    spawn: { frames: [], fps: 2.78, type: 'once'    }, // 5 кадров / 2.78fps ≈ 1.8с, синхронно с SPAWN_DURATION в astronaut.js
     // spawn — спрайт астронавта = idle_01, анимация на шаттле отдельно
   };
 
