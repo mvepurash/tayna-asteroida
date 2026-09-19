@@ -12,20 +12,18 @@
 ## Готовность набора
 
 - [x] `title_screen.webp`
-- [ ] `pause_screen.webp`
-- [ ] `settings_screen.webp`
-- [ ] `briefing_screen.webp`
-- [ ] `records_screen.webp`
+- [x] `pause_screen.webp`
+- [x] `settings_screen.webp`
+- [x] `briefing_screen.webp`
+- [x] `records_screen.webp`
 - [x] `game_over_screen.webp`
 
 `pause_button.webp` переводить не нужно — на нём только значок.
 
 ## Важно
 
-**Язык `en` намеренно НЕ включён в `SUPPORTED` в `js/i18n.js`.** Пока набор
-неполный, игрок с английским языком увидел бы смесь двух языков — это хуже,
-чем последовательный русский. Включать `en` в `SUPPORTED` только когда все
-шесть файлов будут на месте.
+**Набор полный, `en` включён в `SUPPORTED` (20.09.2026).** Игрок с английским
+языком получает английский интерфейс автоматически.
 
 Проверить внешний вид до этого можно параметром `?lang=en` в адресе — работает
 только на localhost и github.io, на площадке Яндекса отключено.

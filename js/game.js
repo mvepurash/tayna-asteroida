@@ -326,7 +326,13 @@ const Game = (() => {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { pause(); }
     else if (UIManager.isPlaying()) { resume(); }
-    else { running = true; lastTime = performance.now(); requestAnimationFrame(loop); }
+    else {
+      // Вернулись на неигровой экран (меню, пауза, экран смерти).
+      // Геймплей не возобновляем, но паузу кислорода снимаем: иначе она
+      // переживёт перезапуск рейса и счётчик останется замороженным.
+      Oxygen.resume();
+      running = true; lastTime = performance.now(); requestAnimationFrame(loop);
+    }
   });
 
   return {
