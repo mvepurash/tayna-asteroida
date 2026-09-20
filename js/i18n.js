@@ -58,6 +58,28 @@ const I18n = (() => {
   };
 
   let lang = FALLBACK;
+  const SAVE_KEY = 'ta_lang';
+
+  // Ручной выбор игрока, если он был. Побеждает автоопределение: иначе человек
+  // переключится на русский, перезайдёт и снова получит английский. Требование
+  // площадки при этом не нарушается — автоопределение работает для всех, кто
+  // язык вручную не выбирал.
+  function _savedLang() {
+    try {
+      const v = localStorage.getItem(SAVE_KEY);
+      return SUPPORTED.includes(v) ? v : null;
+    } catch (e) { return null; }
+  }
+
+  // Переключить на следующий поддерживаемый язык по кругу.
+  // Возвращает новый код языка.
+  function cycle() {
+    const i = SUPPORTED.indexOf(lang);
+    lang = SUPPORTED[(i + 1) % SUPPORTED.length];
+    try { localStorage.setItem(SAVE_KEY, lang); } catch (e) {}
+    console.log('[I18n] язык переключён игроком на:', lang);
+    return lang;
+  }
 
   // Вызывается ОДИН РАЗ при запуске, до инициализации игры.
   // ysdk может быть undefined (запуск вне площадки) — тогда пробуем язык
@@ -81,6 +103,13 @@ const I18n = (() => {
     lang = SUPPORTED.includes(detected) ? detected : FALLBACK;
     if (detected && lang !== detected) {
       console.log(`[I18n] язык "${detected}" не поддержан, откат на "${lang}"`);
+    }
+
+    // Ручной выбор игрока важнее автоопределения
+    const saved = _savedLang();
+    if (saved) {
+      lang = saved;
+      console.log('[I18n] применён сохранённый выбор игрока:', saved);
     }
 
     // Режим проверки неполного перевода: ?lang=xx задаёт язык и текстов тоже,
@@ -135,6 +164,6 @@ const I18n = (() => {
     return lang;
   }
 
-  return { init, t, getLang, getScreenLang };
+  return { init, t, getLang, getScreenLang, cycle, SUPPORTED };
 
 })();
