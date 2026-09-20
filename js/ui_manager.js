@@ -455,7 +455,7 @@ const UIManager = (() => {
 
       // компактная плашка поверх строки-пояснения (заголовок остаётся виден)
       const pw = 300, ph = 26;
-      const px = X + (W - pw) / 2, py = Y + 26;
+      const px = X + (W - pw) / 2, py = Y + (H - ph) / 2;   // строго по центру строки
       ctx.fillStyle = 'rgba(40,0,0,0.92)';
       ctx.beginPath(); ctx.roundRect(px, py, pw, ph, 6); ctx.fill();
       ctx.strokeStyle = `rgba(255,90,90,${0.9 * pulse})`;
