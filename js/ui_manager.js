@@ -196,10 +196,10 @@ const UIManager = (() => {
   // зоны — рамка/бевел кнопки в артах уже даёт иллюзию вдавливания)
   // + короткая яркая вспышка по контуру. Работает без отдельных спрайтов:
   // берём кроп из уже отрисованной картинки экрана.
-  // ⚠️ ВРЕМЕННО ДЛЯ ПРОВЕРКИ ВСПЫШКИ (запрос 20.09.2026) ⚠️
-  // ПОСЛЕ ПРОВЕРКИ ВЕРНУТЬ: FLASH_DURATION = 0.16, PRESS_DELAY_MS = 120
-  const FLASH_DURATION = 2.0;   // боевое значение 0.16
-  const PRESS_DELAY_MS = 2000;  // боевое значение 120
+  // Длительность эффекта нажатия и задержки перехода между экранами.
+  // На периоды калибровки временно поднимались до 2с/2000мс для скриншотов.
+  const FLASH_DURATION = 0.16;
+  const PRESS_DELAY_MS = 120;  // даём вспышке проиграться на ТОМ ЖЕ экране до перехода
   function _drawFlash(ctx, dt) {
     if (!_flash) return;
     _flash.t -= dt;
@@ -432,14 +432,41 @@ const UIManager = (() => {
       ctx.beginPath(); ctx.arc(kx, cy, TOGGLE_TRACK.r, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
-    // индикатор подтверждения сброса
+    // Подтверждение сброса. Раньше здесь рисовался плоский красный
+    // прямоугольник 75..480 — он закрывал всё оформление строки и вылезал
+    // на 70px за её правый край (строка заканчивается на 409, а плашка
+    // доходила до края экрана). Теперь строка остаётся видна: пульсирующая
+    // обводка по её реальным границам плюс компактная плашка с текстом
+    // поверх строки-пояснения.
     if (_resetArm > 0) {
-      ctx.fillStyle = 'rgba(120,0,0,0.85)';
-      ctx.beginPath(); ctx.roundRect(75, 505, 405, 62, 10); ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 16px sans-serif';
+      const X = 71, Y = 500, W = 338, H = 73;
+      const pulse = 0.55 + 0.45 * Math.sin(performance.now() / 140);
+
+      ctx.save();
+      // пульсирующая обводка по контуру самой строки
+      ctx.strokeStyle = `rgba(255,70,70,${0.85 * pulse})`;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = 'rgba(255,40,40,0.9)';
+      ctx.shadowBlur = 18 * pulse;
+      ctx.beginPath();
+      ctx.roundRect(X + 1.5, Y + 1.5, W - 3, H - 3, 10);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // компактная плашка поверх строки-пояснения (заголовок остаётся виден)
+      const pw = 300, ph = 26;
+      const px = X + (W - pw) / 2, py = Y + 34;
+      ctx.fillStyle = 'rgba(40,0,0,0.92)';
+      ctx.beginPath(); ctx.roundRect(px, py, pw, ph, 6); ctx.fill();
+      ctx.strokeStyle = `rgba(255,90,90,${0.9 * pulse})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(px, py, pw, ph, 6); ctx.stroke();
+
+      ctx.fillStyle = '#ffd9d9';
+      ctx.font = 'bold 13px sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(I18n.t('resetConfirm') + ' (' + Math.ceil(_resetArm) + ')', 277, 536);
+      ctx.fillText(I18n.t('resetConfirm') + ' (' + Math.ceil(_resetArm) + ')', X + W / 2, py + ph / 2 + 1);
+      ctx.restore();
     }
     ctx.restore();
   }
