@@ -315,6 +315,11 @@ const Game = (() => {
       YaGames.init().then(ysdk => {
         window.ysdk = ysdk;
         I18n.init(ysdk);   // автоопределение языка при запуске (п. 2.14 требований)
+        // Облачное сохранение (п. 1.9). Игру НЕ ждём: стартуем на локальных
+        // данных, облачные подмешаются, как только придут.
+        Save.initCloud(ysdk).then(ok => {
+          if (ok && typeof Crystals !== 'undefined') Crystals.refreshRecord();
+        });
         init();
       }).catch(() => { I18n.init(null); init(); });
     } else {
@@ -323,8 +328,11 @@ const Game = (() => {
     }
   });
 
+  // Уходим со страницы — дописываем в облако то, что ждало отложенной записи
+  window.addEventListener('pagehide', () => { try { Save.flushNow(); } catch (e) {} });
+
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { pause(); }
+    if (document.hidden) { pause(); try { Save.flushNow(); } catch (e) {} }
     else if (UIManager.isPlaying()) { resume(); }
     else {
       // Вернулись на неигровой экран (меню, пауза, экран смерти).

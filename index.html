@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Тайна Астероида v3</title>
+  <title>Тайна Астероида</title>
 
   <!-- PWA: установка на домашний экран -->
   <link rel="manifest" href="manifest.json?v=20260918a">
@@ -22,6 +22,9 @@
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  -webkit-user-select: none;
+  /* Долгий тап на телефоне не должен вызывать меню браузера (п. 1.6) */
+  -webkit-touch-callout: none;
 }
 
 html {
@@ -86,6 +89,16 @@ html, body {
   <script src="js/audio.js?v=a8b121d"></script>
   <script src="js/ui_manager.js?v=a8b121d"></script>
   <script src="js/game.js?v=a8b121d"></script>
+
+  <script>
+    // Контекстное меню браузера в игровой области отключено (требование 1.6).
+    // На телефоне оно вылезало по долгому тапу прямо поверх игры, на
+    // компьютере — по правой кнопке. Вешаем на весь документ: игра занимает
+    // его целиком, ничего другого на странице нет.
+    document.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { capture: true });
+    // Перетаскивание картинок туда же — на десктопе канвас можно было утащить
+    document.addEventListener('dragstart', function (e) { e.preventDefault(); }, { capture: true });
+  </script>
 
   <script>
     // Регистрация service worker — включает установку на домашний экран.

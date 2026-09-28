@@ -110,9 +110,16 @@ const UIManager = (() => {
   // Благодаря этому набор переводов можно пополнять по одному экрану:
   // переведённые покажутся на своём языке, остальные останутся русскими.
   const STALL_MS = 8000;
+  // Элементы без единой буквы текста одинаковы на всех языках и лежат только
+  // в корневой папке. Без этого списка игра просила en/pause_button.webp,
+  // получала 404 и писала ошибку в консоль — откат срабатывал, но красная
+  // строка в консоли на модерации ни к чему (п. 1.14).
+  const LANG_NEUTRAL = ['pause_button'];
+
   function _screenPath(n, lang) {
     const base = 'assets/ui_designs/';
-    return (lang && lang !== 'ru' ? base + lang + '/' : base) + n + '.webp?v=' + UI_ASSET_V;
+    const localized = lang && lang !== 'ru' && LANG_NEUTRAL.indexOf(n) === -1;
+    return (localized ? base + lang + '/' : base) + n + '.webp?v=' + UI_ASSET_V;
   }
 
   function _loadScreen(n, onSettled) {

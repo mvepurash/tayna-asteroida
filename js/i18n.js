@@ -71,12 +71,24 @@ const I18n = (() => {
     } catch (e) { return null; }
   }
 
+  // Держим атрибут lang документа в согласии с выбранным языком. Он был
+  // прибит к "ru" в разметке и не менялся при переключении — это читают
+  // и поисковики, и вспомогательные технологии.
+  function _syncDocumentLang() {
+    try {
+      if (typeof document !== 'undefined' && document.documentElement) {
+        document.documentElement.lang = lang;
+      }
+    } catch (e) {}
+  }
+
   // Переключить на следующий поддерживаемый язык по кругу.
   // Возвращает новый код языка.
   function cycle() {
     const i = SUPPORTED.indexOf(lang);
     lang = SUPPORTED[(i + 1) % SUPPORTED.length];
     try { localStorage.setItem(SAVE_KEY, lang); } catch (e) {}
+    _syncDocumentLang();
     console.log('[I18n] язык переключён игроком на:', lang);
     return lang;
   }
@@ -121,6 +133,7 @@ const I18n = (() => {
       console.log('[I18n] тексты тоже переключены на', forced, '(режим проверки)');
     }
 
+    _syncDocumentLang();
     console.log('[I18n] выбран язык:', lang);
     return lang;
   }

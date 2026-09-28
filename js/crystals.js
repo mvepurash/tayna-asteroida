@@ -21,6 +21,14 @@ const Crystals = (() => {
     record       = Save ? (Save.getRecord() || 0) : 0;
   }
 
+  // Облачные данные приходят асинхронно, уже после init(). Если рекорд
+  // из облака выше — подхватываем его, иначе на экране рекордов показался
+  // бы локальный, более старый.
+  function refreshRecord() {
+    const r = (typeof Save !== 'undefined') ? (Save.getRecord() || 0) : 0;
+    if (r > record) record = r;
+  }
+
   function resetRun() {
     // Сбрасываем только "за рейс" — сессионный счёт остаётся
     carried = 0;
@@ -93,6 +101,7 @@ const Crystals = (() => {
 
   return {
     init,
+    refreshRecord,
     resetRun,
     mine,
     deliver,
