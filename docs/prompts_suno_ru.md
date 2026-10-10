@@ -70,26 +70,54 @@
 
 ---
 
-## 2. Промт: основной фон игры
+## Как раскладывать текст по полям — поправка к себе
 
-**Режим:** Custom / Instrumental (галочка «Instrumental» обязательна —
-голос в фоне добычи кристаллов не нужен).
+В первой редакции этого файла я писал отрицания прямо в поле стиля:
+«no drums», «no fade out». **Так делать не надо, и это моя ошибка.** Поле
+**Styles** работает как перечень того, что в треке ЕСТЬ: Suno
+подхватывает названные слова, и «no drums» вполне может обернуться
+барабанами. Для отрицаний есть отдельное поле.
 
-**Style (вставить целиком):**
+Правило простое:
+
+- **Styles** — только то, что должно быть. Жанр, темп, тональность,
+  инструменты, фактура, настроение.
+- **Exclude Styles** — всё, чего быть не должно, включая `intro`, `outro`,
+  `fade out`, `crescendo`, `build-up`, `drop`. Структуру петли проще
+  получить запретом на нарастания, чем просьбой «сделай петлю».
+- **Instrumental** — галочка обязательна во всех семи треках.
+- **Ползунки**, если они есть в вашей версии: *Style Influence* повыше
+  (пусть слушается описания), *Weirdness* пониже (пусть не сочиняет песню).
+- **Title** — пишите сразу наше имя файла: так в библиотеке не запутаться,
+  когда вариантов станет три десятка.
+
+Длина строки стиля у разных версий Suno ограничена по-разному. Поэтому
+ниже к каждому треку даны **два варианта: полный и короткий (до 200
+символов)**. Если поле ругается на длину или молча обрезает — берите
+короткий, он не хуже, просто плотнее.
+
+---
+
+## 2. Основной фон игры
+
+**Title:** `asteroid_ambient_01`
+
+**Styles** (272 символа):
 
 ```
-dark ambient sci-fi, 66 BPM, deep sub-bass drone in D minor, slow breathing
-pulse like a life-support system, metallic hull creaks and distant structural
-groans, sparse detuned bell motif far away, granular dust textures, airless and
-claustrophobic, unresolved, no melody lead, no drum kit, steady and continuous,
-seamless loop, no intro, no outro, no fade in, no fade out
+dark ambient sci-fi, 66 BPM, deep sub-bass drone, D minor, slow breathing pulse like life support, metallic hull creaks, distant structural groans, sparse detuned bell far away, granular dust texture, airless, claustrophobic, static unresolved arrangement, continuous loop
 ```
 
-**Exclude styles:**
+**Styles, короткий** (185 символов):
 
 ```
-vocals, choir, drums, percussion fills, orchestral swells, cinematic trailer
-hits, major key, uplifting, resolution, guitar, piano ballad
+dark ambient sci-fi, 66 BPM, deep sub-bass drone, D minor, slow life-support pulse, metallic hull creaks, distant groans, granular dust, airless, claustrophobic, static, continuous loop
+```
+
+**Exclude Styles** (общий для всех треков этой игры):
+
+```
+vocals, choir, drums, percussion, melody lead, guitar, piano, orchestral swell, crescendo, build-up, drop, intro, outro, fade in, fade out, major key, uplifting, resolution
 ```
 
 **Длина:** просить 3–4 минуты. Шесть минут, как сейчас, не нужны — я
@@ -110,24 +138,20 @@ hits, major key, uplifting, resolution, guitar, piano ballad
 
 ---
 
-## 3. Промт: экран гибели
+## 3. Экран гибели
 
-**Режим:** Custom / Instrumental.
+**Title:** `asteroid_ambient_02`
 
-**Style:**
-
-```
-dark ambient, very slow, heavy muffled sub-bass swell, low cello drone, distant
-metal impact with long reverb tail, no high frequencies, muted and underwater-
-dull, resigned and final but not tragic, sparse, continuous, no intro, no outro,
-no fade out
-```
-
-**Exclude styles:**
+**Styles** (172 символа, укладывается везде):
 
 ```
-vocals, drums, percussion, bright synths, cymbals, strings crescendo, hopeful,
-major key, trailer braam
+dark ambient, very slow, heavy muffled sub-bass swell, low cello drone, distant metal impact with long reverb tail, low-passed and dull, resigned, final, sparse, continuous
+```
+
+**Exclude Styles** — тот же общий список, плюс допишите в конец:
+
+```
+, cymbals, trailer braam
 ```
 
 **Длина:** 1–1:30, подрежу до ~45 секунд петли.
@@ -148,15 +172,15 @@ major key, trailer braam
 вызывается только при старте миссии. Короткая петля на 1:30 сделала бы
 титул живым.
 
-```
-dark ambient sci-fi menu loop, 60 BPM, warm low drone, slow distant radio
-beacon pings every few seconds, soft tape hiss, calm but watchful, spacious,
-no melody, continuous, seamless loop, no intro, no outro
-```
+**Title:** `asteroid_menu`
+
+**Styles** (168 символов):
 
 ```
-Exclude: vocals, drums, melody lead, bright pads, uplifting, resolution
+dark ambient sci-fi menu loop, 60 BPM, warm low drone, slow distant radio beacon pings, soft tape hiss, calm but watchful, spacious, static arrangement, continuous loop
 ```
+
+**Exclude Styles** — тот же общий список.
 
 ---
 
