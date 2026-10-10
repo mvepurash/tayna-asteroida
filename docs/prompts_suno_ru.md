@@ -117,41 +117,63 @@
 
 ## 2. Основной фон игры
 
-**Title:** `asteroid_ambient_01`
+### Сначала — разбор ошибки, из-за которой первая редакция не годилась
 
-**Styles** (272 символа):
+Владелец послушал и сказал: «какой-то похоронный марш, ни динамики, ни
+адреналина, просто тягомотина». Он прав, и причина не в формулировках, а
+в методе.
+
+**Я измерил не то.** Промт был построен по замеру СТАРОГО трека: 66
+ударов, низ 60 %, динамика 8.3 дБ. Я аккуратно воспроизвёл его характер —
+вместе с тем, что этот характер и был скучным. Мерить надо было **игру**,
+а не то, что в ней лежало.
+
+А игра вот про что: щупальца выползают **по циклу**, кислород тикает
+**всегда**, добыл — **беги** обратно к шаттлу. Это игра про ритм, таймер
+и рывок. Такой игре нужен **пульс**, а не плёнка гудения под ней.
+
+И два слова в старом промте убивали адреналин адресно:
+
+- `static unresolved arrangement` — прямая просьба не менять ничего;
+- `drums, percussion` в списке запретов — я выкинул ровно то, из чего
+  делается драйв, потому что боялся за шов петли.
+
+Размен был неверный. **Лучше взять живой трек и вырезать из него хорошую
+петлю, чем получить ровный и скучный.** Резать петли — моя работа, и я
+её сделаю.
+
+### Два направления на выбор
+
+Сгенерируйте оба и сравните — кредитов не жалко, скачивать пока не надо.
+
+**Вариант А — «Погоня».** Ставка на скорость и напор.
+
+**Title:** `asteroid_main_A` · **Styles** (222 символа):
 
 ```
-dark ambient sci-fi, 66 BPM, deep sub-bass drone, D minor, slow breathing pulse like life support, metallic hull creaks, distant structural groans, sparse detuned bell far away, granular dust texture, airless, claustrophobic, static unresolved arrangement, continuous loop
+instrumental, dark driving sci-fi electronic, 124 BPM, relentless pulsing 16th-note analog sequencer bassline, punchy electronic drums, industrial metal percussion hits, D minor ostinato, cold arpeggios, urgent, propulsive
 ```
 
-**Styles, короткий** (185 символов):
+**Вариант Б — «Таймер».** Ставка на тиканье кислорода и подкрадывающуюся
+панику. Медленнее, но не расслабленнее.
+
+**Title:** `asteroid_main_B` · **Styles** (211 символов):
 
 ```
-dark ambient sci-fi, 66 BPM, deep sub-bass drone, D minor, slow life-support pulse, metallic hull creaks, distant groans, granular dust, airless, claustrophobic, static, continuous loop
+instrumental, tense industrial electronica, 108 BPM, mechanical ticking clock pulse, heartbeat kick drum, gritty sub-bass ostinato, metallic clanks offbeat, cold analog arpeggio, claustrophobic, creeping urgency
 ```
 
-**Exclude Styles** (общий для всех треков этой игры):
+**Exclude styles — НОВЫЙ, общий** (188 символов). Барабаны и перкуссия из
+него убраны намеренно, зато добавлено то, что и давало похоронный марш:
 
 ```
-vocals, choir, drums, percussion, melody lead, guitar, piano, orchestral swell, crescendo, build-up, drop, intro, outro, fade in, fade out, major key, uplifting, resolution
+vocals, choir, singing, humming, ambient drone, new age, meditation, slow ballad, piano ballad, orchestral strings, major key, uplifting, happy, resolution, intro, outro, fade in, fade out
 ```
 
-**Длина:** просить 3–4 минуты. Шесть минут, как сейчас, не нужны — я
-подрежу петлю, и она пойдёт бесшовно сколько угодно.
+**Остальные поля:** Lyrics пусто, Duration → Custom 3 минуты,
+Style Influence 80–90 %, Weirdness 20–30 %.
 
-**Что здесь важно и почему именно так:**
-
-- «66 BPM» и «breathing pulse» — замеренный пульс нынешнего трека. Он
-  держит напряжение, не превращаясь в ритм, под который хочется стучать.
-- «life-support system» — это про кислород. В игре всегда тикает таймер
-  кислорода, и музыка должна об этом напоминать, не сообщая словами.
-- «metallic hull creaks», «structural groans» — щупальца. Не рык
-  чудовища, а звук того, что под тобой что-то шевелится.
-- «no melody lead» — мелодию через шесть минут начинаешь ненавидеть.
-  Фон должен быть тем, чего не замечаешь, пока не выключишь.
-- Низ 60 % — ради него «deep sub-bass drone». На телефонном динамике низа
-  всё равно не будет, но на наушниках он и даёт давление.
+**Длина:** 3 минуты хватит. Петлю вырежу я.
 
 ---
 
@@ -165,11 +187,10 @@ vocals, choir, drums, percussion, melody lead, guitar, piano, orchestral swell, 
 dark ambient, very slow, heavy muffled sub-bass swell, low cello drone, distant metal impact with long reverb tail, low-passed and dull, resigned, final, sparse, continuous
 ```
 
-**Exclude Styles** — тот же общий список, плюс допишите в конец:
-
-```
-, cymbals, trailer braam
-```
+**Exclude Styles** — к общему списку допишите `, drums, percussion,
+cymbals, trailer braam`. Здесь барабаны лишние, и это не противоречие с
+фоном: похоронный марш плох там, где игрок играет, и уместен там, где он
+уже проиграл.
 
 **Длина:** 1–1:30, подрежу до ~45 секунд петли.
 
@@ -191,10 +212,11 @@ dark ambient, very slow, heavy muffled sub-bass swell, low cello drone, distant 
 
 **Title:** `asteroid_menu`
 
-**Styles** (168 символов):
+**Styles** (196 символов). Меню — не фон боя, но и не колыбельная:
+пульс нужен, просто сдержанный, как мотор на холостых.
 
 ```
-dark ambient sci-fi menu loop, 60 BPM, warm low drone, slow distant radio beacon pings, soft tape hiss, calm but watchful, spacious, static arrangement, continuous loop
+instrumental, dark sci-fi menu loop, 84 BPM, slow steady pulse, low analog sequencer, distant radio beacon pings, soft tape hiss, cold and watchful, spacious, coiled tension before launch
 ```
 
 **Exclude Styles** — тот же общий список.
