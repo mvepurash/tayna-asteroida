@@ -179,28 +179,62 @@ Style Influence 80–90 %, Weirdness 20–30 %.
 
 ## 3. Экран гибели
 
-**Title:** `asteroid_ambient_02`
+### Что этот трек должен делать
 
-**Styles** (172 символа, укладывается везде):
+Не оплакивать. На экране гибели стоят кнопки «ВОСКРЕСНУТЬ ЗА РЕКЛАМУ» и
+перезапуск, и задача музыки — **довести игрока до них**, а не проводить
+его в последний путь. Плач на десятый раз заставляет закрыть вкладку.
+
+При этом удар должен быть. Игрок только что потерял рюкзак с кристаллами,
+и если это прозвучит буднично, терять будет не жалко — а жалко должно
+быть, иначе незачем и стараться.
+
+Отсюда форма: **тяжёлый удар в начале, дальше холодно и коротко**. Сорок
+пять секунд, по кругу.
+
+Единственное, что я беру из замера старого трека, — его глухость: выше
+2 кГц там всего 1 % энергии. Но беру не потому, что так было, а потому,
+что это правда про смерть от нехватки кислорода: слух отказывает первым.
+
+### Два направления
+
+**Вариант А — «Поражение».** Удар и оседающая тишина. Классика.
+
+**Title:** `asteroid_death_A` · **Styles** (197 символов):
 
 ```
-dark ambient, very slow, heavy muffled sub-bass swell, low cello drone, distant metal impact with long reverb tail, low-passed and dull, resigned, final, sparse, continuous
+instrumental, dark cinematic, very slow, heavy muffled sub-bass impact with long reverb tail, low cello note sinking, air hissing away, muted and low-passed as if hearing fails, cold, final, sparse
 ```
 
-**Exclude Styles** — к общему списку допишите `, drums, percussion,
-cymbals, trailer braam`. Здесь барабаны лишние, и это не противоречие с
-фоном: похоронный марш плох там, где игрок играет, и уместен там, где он
-уже проиграл.
+**Exclude styles** (185):
 
-**Длина:** 1–1:30, подрежу до ~45 секунд петли.
+```
+vocals, choir, singing, humming, drums, percussion, cymbals, piano ballad, orchestral strings, major key, uplifting, happy, resolution, hopeful, new age, intro, outro, fade in, fade out
+```
 
-**Почему «no high frequencies»:** замер показал, что в нынешнем треке выше
-2 кГц всего 1 % энергии. Это и делает экран гибели глухим — как будто шлем
-уже не передаёт звук. Попадание в этот характер важнее, чем попадание в
-ноты.
+**Вариант Б — «Ещё раз».** Пульс остаётся — медленный, как сбивающееся
+сердце. Не утешает и не хоронит, а держит в напряжении, пока игрок
+тянется к кнопке. **Рекомендую начать с него:** он ближе к тому, чего вы
+хотели от фона, и с ним экран гибели не выпадает из игры.
 
-**Почему «не трагично»:** игрок будет слышать это по десять раз за сессию.
-Траур на десятый раз раздражает, глухая тишина — нет.
+**Title:** `asteroid_death_B` · **Styles** (200 символов):
+
+```
+instrumental, dark electronic, 90 BPM, slow heavy pulse like a failing heartbeat, gritty low sub-bass, cold analog drone, distant alarm tone, muffled and low-passed, grim, defiant, unfinished business
+```
+
+**Exclude styles** (194). Тарелки и рабочий запрещены, бочка — нет: она и
+есть то самое сердцебиение.
+
+```
+vocals, choir, singing, humming, cymbals, hi-hats, snare, drum fills, piano ballad, orchestral strings, major key, uplifting, happy, resolution, hopeful, new age, intro, outro, fade in, fade out
+```
+
+**Остальные поля:** Lyrics пусто, **Duration → Custom, 1 минута**,
+Style Influence 80–90 %, Weirdness 20–30 %.
+
+Из минуты я вырежу петлю на 40–45 секунд — ровно столько, сколько игрок
+смотрит на свои цифры, прежде чем нажать «ещё раз».
 
 ---
 
