@@ -85,13 +85,13 @@
 - **Exclude styles** (внутри блока **More Options**) — всё, чего быть не должно, включая `intro`, `outro`,
   `fade out`, `crescendo`, `build-up`, `drop`. Структуру петли проще
   получить запретом на нарастания, чем просьбой «сделай петлю».
-- **Instrumental** — обязателен во всех семи треках. В интерфейсе v6
-  (Create → Advanced) переключатель живёт в карточке **Lyrics**: нажмите
-  шеврон «∨» рядом со словом Lyrics. Если не находится — работает и без
-  него: **оставьте Lyrics полностью пустым**, добавьте слово
-  `instrumental` в начало Styles, а в Exclude styles уже стоят `vocals`
-  и `choir`; добавьте туда же `singing, humming`. Vocal Gender не
-  трогайте вовсе.
+- **Instrumental** — никакой галочки в v6 нет вовсе. Пустая карточка
+  Lyrics сама это говорит: *«Start writing lyrics, or leave this empty
+  for instrumental»*. Значит, **оставить Lyrics пустым — и всё**.
+  Для верности слово `instrumental` всё равно ставим первым в Styles,
+  а `vocals, choir, singing, humming` держим в Exclude styles: голос
+  иногда прорывается во второй половине трека, поэтому слушать надо
+  целиком. Vocal Gender не трогать, пусть остаётся невыбранным.
 
   **ГЛАВНАЯ ЛОВУШКА.** В Advanced поле Lyrics стоит первым и крупным, и
   в него легко вставить описание стиля. Тогда Suno СПОЁТ это описание
